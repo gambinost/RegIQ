@@ -1,0 +1,14 @@
+{
+    "regulation_id": "GDPR-2026-003",
+    "title": "Amendment to Article 17 - Enhanced Right to Erasure with 30-Day Mandate",
+    "source": "EUR-Lex",
+    "jurisdiction": "EU",
+    "effective_date": "2026-09-01",
+    "industry_tags": [
+        "data_processing",
+        "consumer_rights",
+        "digital_services"
+    ],
+    "summary": "Reduces mandatory data erasure window from 90 days to 30 days for all EU data controllers processing personal data of EU residents.",
+    "full_text": "REGULATION (EU) 2026/003 OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL of 15 May 2026 amending Regulation (EU) 2016/679 (GDPR) with respect to the right to erasure.\n\nArticle 17(1) - Right to Erasure (Amendment)\nThe data subject shall have the right to obtain from the controller the erasure of personal data concerning him or her without undue delay and the controller shall have the obligation to erase personal data without undue delay where one of the following grounds applies.\n\nFor the purposes of this Article, 'without undue delay' shall mean within thirty (30) calendar days of receipt of a valid erasure request, reduced from the previous ninety (90) day standard. This applies to all personal data across all processing systems operated by or on behalf of the controller.\n\nArticle 17(2) - Automated System Requirements\nControllers processing personal data across multiple systems shall implement automated erasure workflows capable of achieving cross-system deletion within the thirty (30) day window specified in paragraph 1. Manual-only deletion processes that cannot demonstrably meet this timeline are no longer compliant.\n\nArticle 17(3) - Audit and Verification\nControllers shall maintain immutable audit logs of all erasure operations, including timestamp of request receipt, timestamp of completion, systems affected, and confirmation of deletion. These logs shall be retained for a minimum of three (3) years and made available to supervisory authorities upon request.\n\nArticle 17(4) - Penalties\nInfringement of this Article shall be subject to administrative fines up to EUR 20,000,000 or, in case of an undertaking, up to 4% of total worldwide annual turnover of the preceding financial year, whichever is higher.\n\nRecital 43\nGiven the increasing capability of automated data processing systems, the previous 90-day erasure window no longer reflects technical feasibility. Modern data management platforms are capable of executing cross-system erasure within hours. The 30-day mandate accounts for necessary human verification steps while reflecting current technological standards."
+}

@@ -1,0 +1,1 @@
+# Impact Mapper Agent (gpt-5.1, RAG-assisted process mapping)
