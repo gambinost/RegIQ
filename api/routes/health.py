@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.params import Depends
 
-from configs.config import Settings, get_settings
+from core.settings import Settings, get_settings
 
 base_router = APIRouter(prefix="/api/v1", tags=["api_v1", "health"])
 
@@ -13,4 +13,4 @@ async def health_check():
 
 @base_router.get("/info")
 async def get_info(app_settings: Settings = Depends(get_settings)):
-    return {"app_name": app_settings.app_name, "app_version": app_settings.app_version}
+    return {"app_name": app_settings.APP_NAME, "app_version": app_settings.APP_VERSION}
