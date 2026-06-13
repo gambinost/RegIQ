@@ -48,3 +48,9 @@ target-version = "py311"
 
 [tool.hatch.build.targets.wheel]
 packages = ["agents", "api", "core", "models", "rag", "scripts"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.4.0",
+]
