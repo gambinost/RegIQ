@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -13,7 +15,7 @@ class RegulationInput(BaseModel):
 
 
 class RegulationAssessment(BaseModel):
-    regulation_id: str
+    regulation_id: str = Field(default_factory=lambda: f"REG-{uuid4().hex[:8].upper()}")
     regulation_name: str
     jurisdiction: str
     effective_date: str | None = None

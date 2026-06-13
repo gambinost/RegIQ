@@ -1,17 +1,25 @@
-import asyncio
+from dotenv import load_dotenv
 
-from band import Agent, Emit
-from band.core.simple_adapter import SimpleAdapter
-from band.core.types import PlatformMessage
-from band.runtime.tools import AgentToolsProtocol
+load_dotenv()  # noqa: E402 — must run before langchain/langsmith imports
 
-from core.llm import get_fast_llm
-from models.regulation import RegulationAssessment
-from utils.loggers import log_info, log_success, log_error, log_warning
+import asyncio  # noqa: E402
 
-from agents.monitor.prompts import MONITOR_SYSTEM_PROMPT, URGENCY_CASCADE_PROMPT
+from band import Agent, Emit  # noqa: E402
+from band.core.simple_adapter import SimpleAdapter  # noqa: E402
+from band.core.types import PlatformMessage  # noqa: E402
+from langchain_core.exceptions import OutputParserException  # noqa: E402
+from pydantic import ValidationError  # noqa: E402
 
-CASCADE_TARGET_SLUG = "legal-parser"
+from core.cascade import resolve_cascade_target  # noqa: E402
+from core.llm import get_fast_llm  # noqa: E402
+from models.regulation import RegulationAssessment  # noqa: E402
+from utils.loggers import log_info, log_success, log_error, log_warning  # noqa: E402
+
+from agents.monitor.prompts import (
+    MONITOR_SYSTEM_PROMPT,
+    RETRY_SYSTEM_PROMPT,
+    URGENCY_CASCADE_PROMPT,
+)  # noqa: E402
 
 
 def format_assessment(assessment: RegulationAssessment) -> str:
@@ -45,38 +53,44 @@ class MonitorAdapter(SimpleAdapter):
     def __init__(self):
         super().__init__()
         self._structured_llm = None
+        self._retry_llm = None
         self._cascade_handle: str | None = None
 
     def _get_structured_llm(self):
         if self._structured_llm is None:
-            self._structured_llm = get_fast_llm().with_structured_output(RegulationAssessment)
+            self._structured_llm = get_fast_llm().with_structured_output(
+                RegulationAssessment, method="json_mode"
+            )
         return self._structured_llm
 
-    async def _resolve_cascade_target(self, tools: AgentToolsProtocol) -> str:
-        if self._cascade_handle is not None:
-            return self._cascade_handle
+    def _get_retry_llm(self):
+        if self._retry_llm is None:
+            self._retry_llm = get_fast_llm().with_structured_output(
+                RegulationAssessment, method="json_mode"
+            )
+        return self._retry_llm
 
+    async def _invoke_with_retry(self, content: str) -> RegulationAssessment:
+        structured_llm = self._get_structured_llm()
+
+        log_info("Calling LLM for regulation assessment...")
         try:
-            participants = await tools.get_participants()
-            for p in participants:
-                handle = getattr(p, "handle", None) or (
-                    p.get("handle", "") if isinstance(p, dict) else ""
-                )
-                if CASCADE_TARGET_SLUG in handle:
-                    self._cascade_handle = handle
-                    log_success(f"Resolved cascade target: {handle}")
-                    return handle
-        except Exception as e:
-            log_warning(f"Could not resolve cascade target from participants: {e}")
-
-        self._cascade_handle = CASCADE_TARGET_SLUG
-        log_warning(f"Could not find '{CASCADE_TARGET_SLUG}' in participants, using fallback")
-        return self._cascade_handle
+            assessment: RegulationAssessment = await structured_llm.ainvoke(
+                [("system", MONITOR_SYSTEM_PROMPT), ("human", content)]
+            )
+            return assessment
+        except (OutputParserException, ValidationError) as e:
+            log_warning(f"First attempt failed: {e}. Retrying with stricter prompt...")
+            retry_llm = self._get_retry_llm()
+            assessment = await retry_llm.ainvoke(
+                [("system", RETRY_SYSTEM_PROMPT), ("human", content)]
+            )
+            return assessment
 
     async def on_message(
         self,
         msg: PlatformMessage,
-        tools: AgentToolsProtocol,
+        tools,
         history,
         participants_msg: str | None,
         contacts_msg: str | None,
@@ -92,28 +106,34 @@ class MonitorAdapter(SimpleAdapter):
             return
 
         try:
-            structured_llm = self._get_structured_llm()
-
-            log_info("Calling LLM for regulation assessment...")
-            assessment: RegulationAssessment = await structured_llm.ainvoke(
-                [
-                    ("system", MONITOR_SYSTEM_PROMPT),
-                    ("human", content),
-                ]
-            )
+            assessment = await self._invoke_with_retry(content)
 
             log_success(f"Assessment complete: {assessment.regulation_name} — {assessment.urgency}")
 
-            cascade_handle = await self._resolve_cascade_target(tools)
+            slug, cascade_handle = await resolve_cascade_target(
+                tools, "monitor", self._cascade_handle
+            )
+            self._cascade_handle = cascade_handle
+            mention = cascade_handle or slug
+
             chat_message = format_assessment(assessment) + "\n\n" + URGENCY_CASCADE_PROMPT
 
-            await tools.send_message(chat_message, mentions=[cascade_handle])
-            log_success(f"Sent assessment to room, @mentioning {cascade_handle}")
+            await tools.send_message(chat_message, mentions=[mention])
+            log_success(f"Sent assessment to room, @mentioning {mention}")
 
         except Exception as e:
             log_error(f"Error processing regulation: {e}")
+            try:
+                slug, cascade_handle = await resolve_cascade_target(
+                    tools, "monitor", self._cascade_handle
+                )
+                self._cascade_handle = cascade_handle
+                mention = cascade_handle or slug
+            except Exception:
+                mention = "regiq-legal-parser"
             await tools.send_message(
-                f"Error processing regulation: {e}",
+                f"Error processing regulation. Please retry.",
+                mentions=[mention],
             )
 
 

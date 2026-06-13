@@ -7,7 +7,8 @@ import pytest
 from band.core.types import PlatformMessage
 from band.testing.fake_tools import FakeAgentTools
 
-from agents.monitor.agent import MonitorAdapter, format_assessment, CASCADE_TARGET_SLUG
+from agents.monitor.agent import MonitorAdapter, format_assessment
+from core.cascade import CASCADE_SLUGS, resolve_cascade_target
 from models.regulation import RegulationAssessment
 
 
@@ -92,45 +93,44 @@ class TestFormatAssessment:
 class TestCascadeResolution:
     @pytest.mark.asyncio
     async def test_resolves_handle_from_participants(self):
-        adapter = MonitorAdapter()
         tools = FakeAgentTools(participants=LEGAL_PARSER_PARTICIPANTS)
-
-        handle = await adapter._resolve_cascade_target(tools)
+        slug, handle = await resolve_cascade_target(tools, "monitor")
         assert handle == "darkooo142/regiq-legal-parser"
-        assert adapter._cascade_handle == "darkooo142/regiq-legal-parser"
+        assert slug == "legal-parser"
 
     @pytest.mark.asyncio
-    async def test_caches_resolved_handle(self):
-        adapter = MonitorAdapter()
+    async def test_cache_returns_same_handle(self):
         tools = FakeAgentTools(participants=LEGAL_PARSER_PARTICIPANTS)
-
-        handle1 = await adapter._resolve_cascade_target(tools)
-        handle2 = await adapter._resolve_cascade_target(tools)
-        assert handle1 == handle2 == "darkooo142/regiq-legal-parser"
+        _, handle1 = await resolve_cascade_target(tools, "monitor", cached_handle=None)
+        _, handle2 = await resolve_cascade_target(tools, "monitor", cached_handle=handle1)
+        assert handle1 == handle2
 
     @pytest.mark.asyncio
-    async def test_falls_back_to_slug_when_not_found(self):
-        adapter = MonitorAdapter()
+    async def test_falls_back_when_not_found(self):
         tools = FakeAgentTools(
             participants=[
                 {"handle": "darkooo142", "name": "Moamen", "id": "user-1"},
             ]
         )
-
-        handle = await adapter._resolve_cascade_target(tools)
-        assert handle == CASCADE_TARGET_SLUG
+        slug, handle = await resolve_cascade_target(tools, "monitor")
+        assert handle == "legal-parser"
 
     @pytest.mark.asyncio
     async def test_finds_target_in_handle(self):
-        adapter = MonitorAdapter()
         tools = FakeAgentTools(
             participants=[
                 {"handle": "someone/regiq-legal-parser", "name": "Parser", "id": "abc"},
             ]
         )
-
-        handle = await adapter._resolve_cascade_target(tools)
+        slug, handle = await resolve_cascade_target(tools, "monitor")
         assert handle == "someone/regiq-legal-parser"
+
+    def test_cascade_slugs_mapping(self):
+        assert CASCADE_SLUGS["monitor"] == "legal-parser"
+        assert CASCADE_SLUGS["legal_parser"] == "impact-mapper"
+        assert CASCADE_SLUGS["impact_mapper"] == "gap-analyst"
+        assert CASCADE_SLUGS["gap_analyst"] == "remediation-planner"
+        assert CASCADE_SLUGS["remediation_planner"] is None
 
 
 class TestMonitorAdapterOnMessage:
@@ -223,11 +223,17 @@ class TestMonitorAdapterOnMessage:
         mock_llm = MagicMock()
         mock_llm.ainvoke = AsyncMock(side_effect=Exception("LLM API error"))
 
+        mock_retry_llm = MagicMock()
+        mock_retry_llm.ainvoke = AsyncMock(side_effect=Exception("LLM API error"))
+
         adapter = MonitorAdapter()
         tools = FakeAgentTools(participants=LEGAL_PARSER_PARTICIPANTS)
         msg = _make_msg("Some regulation text")
 
-        with patch.object(adapter, "_get_structured_llm", return_value=mock_llm):
+        with (
+            patch.object(adapter, "_get_structured_llm", return_value=mock_llm),
+            patch.object(adapter, "_get_retry_llm", return_value=mock_retry_llm),
+        ):
             await adapter.on_message(
                 msg,
                 tools,
@@ -240,6 +246,38 @@ class TestMonitorAdapterOnMessage:
 
         tools.assert_message_sent(count=1)
         assert "Error" in tools.messages_sent[0]["content"]
+        assert len(tools.messages_sent[0]["mentions"]) >= 1
+
+    @pytest.mark.asyncio
+    async def test_retries_on_validation_error(self, sample_assessment):
+        from langchain_core.exceptions import OutputParserException
+
+        mock_llm = MagicMock()
+        mock_llm.ainvoke = AsyncMock(side_effect=OutputParserException("Parse error"))
+
+        mock_retry_llm = MagicMock()
+        mock_retry_llm.ainvoke = AsyncMock(return_value=sample_assessment)
+
+        adapter = MonitorAdapter()
+        tools = FakeAgentTools(participants=LEGAL_PARSER_PARTICIPANTS)
+        msg = _make_msg("New regulation")
+
+        with (
+            patch.object(adapter, "_get_structured_llm", return_value=mock_llm),
+            patch.object(adapter, "_get_retry_llm", return_value=mock_retry_llm),
+        ):
+            await adapter.on_message(
+                msg,
+                tools,
+                [],
+                None,
+                None,
+                is_session_bootstrap=True,
+                room_id="room-test",
+            )
+
+        tools.assert_message_sent(count=1)
+        assert "GDPR" in tools.messages_sent[0]["content"]
 
     @pytest.mark.asyncio
     async def test_cascade_prompt_included(self, sample_assessment):
@@ -301,3 +339,14 @@ class TestRegulationAssessmentModel:
         )
         assert a.effective_date is None
         assert a.key_requirements == []
+
+    def test_regulation_id_auto_generated(self):
+        a = RegulationAssessment(
+            regulation_name="Auto ID Regulation",
+            jurisdiction="EU",
+            urgency="Medium",
+            urgency_reasoning="Test",
+            summary="Test",
+        )
+        assert a.regulation_id.startswith("REG-")
+        assert len(a.regulation_id) == 12

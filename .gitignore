@@ -223,3 +223,6 @@ agent_config.yaml
 
 docs/
 notes.md
+skills/
+CONTEXT.md
+logs.md

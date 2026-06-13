@@ -1,7 +1,11 @@
-from functools import lru_cache
-from typing import Optional
+from dotenv import load_dotenv
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+load_dotenv()  # noqa: E402 — must run before any langsmith/env-dependent imports
+
+from functools import lru_cache  # noqa: E402
+from typing import Optional  # noqa: E402
+
+from pydantic_settings import BaseSettings, SettingsConfigDict  # noqa: E402
 
 
 class Settings(BaseSettings):
