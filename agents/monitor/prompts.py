@@ -28,7 +28,11 @@ CRITICAL: Do NOT rename fields. Do NOT add extra fields. Do NOT wrap in markdown
 The field names must match EXACTLY: regulation_id, regulation_name, jurisdiction, effective_date, urgency, key_requirements, summary, urgency_reasoning.
 Do NOT use urgency_level, critical_requirements, or any other variation.
 
-Be factual and precise. Your output feeds directly into downstream agents."""
+Be factual and precise. Your output feeds directly into downstream agents.
+
+Format your response as:
+1. A human-readable markdown summary with an urgency emoji header (🔴 Critical, 🟠 High, 🟡 Medium, 🟢 Low)
+2. The structured assessment data as a ```json block"""
 
 RETRY_SYSTEM_PROMPT = """You are the Monitor Agent for RegIQ. Your previous response had incorrect field names.
 
@@ -52,10 +56,6 @@ COMMON MISTAKES TO AVOID:
 
 Return the JSON now."""
 
-URGENCY_CASCADE_PROMPT = """The regulation assessment is complete. Forward this to the Legal Parser for detailed requirement extraction.
-
-Format your response as:
-1. A clear summary section for human readers in the chat
-2. The structured assessment data (JSON) that the next agent will parse
-
-Always @mention the legal_parser agent so it picks up this regulation."""
+URGENCY_CASCADE_PROMPT = (
+    "\n\n📎 **Forwarding to Legal Parser for detailed requirement extraction.**"
+)
