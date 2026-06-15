@@ -6,7 +6,7 @@ CASCADE_SLUGS = {
     "monitor": "legal-parser",
     "legal_parser": "impact-mapper",
     "impact_mapper": "gap-analyst",
-    "gap_analyst": "remediation-planner",
+    "gap_analyst": "planner",
     "remediation_planner": None,
 }
 

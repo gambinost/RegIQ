@@ -129,7 +129,7 @@ class TestCascadeResolution:
         assert CASCADE_SLUGS["monitor"] == "legal-parser"
         assert CASCADE_SLUGS["legal_parser"] == "impact-mapper"
         assert CASCADE_SLUGS["impact_mapper"] == "gap-analyst"
-        assert CASCADE_SLUGS["gap_analyst"] == "remediation-planner"
+        assert CASCADE_SLUGS["gap_analyst"] == "planner"
         assert CASCADE_SLUGS["remediation_planner"] is None
 
 
