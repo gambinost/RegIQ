@@ -1,0 +1,211 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand: teal/cyan (hue ~185) — regulatory intelligence, not blue */
+  --color-ink: oklch(97% 0.01 185);
+  --color-ink-muted: oklch(72% 0.015 185);
+  --color-ink-dim: oklch(55% 0.01 185);
+
+  /* Surfaces: deep near-black, tinted toward teal */
+  --color-surface-0: oklch(10% 0.02 185);
+  --color-surface-1: oklch(14% 0.025 185);
+  --color-surface-2: oklch(18% 0.03 185);
+  --color-surface-3: oklch(22% 0.035 185);
+
+  /* Accent: teal — primary actions, focus */
+  --color-accent: oklch(65% 0.15 185);
+  --color-accent-muted: oklch(65% 0.08 185);
+  --color-accent-glow: oklch(65% 0.15 185 / 0.25);
+  --color-accent-bg: oklch(65% 0.15 185 / 0.12);
+
+  /* Semantic priority colors */
+  --color-priority-critical: oklch(60% 0.22 25);
+  --color-priority-critical-bg: oklch(20% 0.06 25);
+  --color-priority-critical-glow: oklch(60% 0.22 25 / 0.2);
+  --color-priority-high: oklch(65% 0.18 55);
+  --color-priority-high-bg: oklch(65% 0.18 55 / 0.12);
+  --color-priority-medium: oklch(70% 0.14 85);
+  --color-priority-medium-bg: oklch(70% 0.14 85 / 0.12);
+  --color-priority-low: oklch(65% 0.12 150);
+  --color-priority-low-bg: oklch(65% 0.12 150 / 0.12);
+
+  /* Status */
+  --color-status-pending: oklch(70% 0.12 80);
+  --color-status-pending-bg: oklch(70% 0.12 80 / 0.15);
+  --color-status-approved: oklch(60% 0.15 150);
+  --color-status-approved-bg: oklch(60% 0.15 150 / 0.15);
+  --color-status-rejected: oklch(55% 0.18 25);
+  --color-status-rejected-bg: oklch(55% 0.18 25 / 0.15);
+
+  /* Danger / Reject */
+  --color-danger: oklch(55% 0.18 25);
+  --color-danger-muted: oklch(55% 0.10 25);
+  --color-danger-bg: oklch(55% 0.18 25 / 0.12);
+  --color-danger-glow: oklch(55% 0.18 25 / 0.25);
+
+  /* Typography */
+  --font-sans: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Consolas, 'Liberation Mono', monospace;
+
+  /* Spacing: 4px base */
+  --spacing: 4px;
+
+  /* Easing */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+}
+
+body {
+  background: var(--color-surface-0);
+  color: var(--color-ink);
+  margin: 0;
+  min-height: 100svh;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+/* ── Animations ── */
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes backdrop-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes modal-slide-up {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes status-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(65% 0.15 185 / 0.4); }
+  50%      { box-shadow: 0 0 0 6px oklch(65% 0.15 185 / 0); }
+}
+
+/* Critical urgency: slow, barely-visible inner glow — breathes, doesn't shout */
+@keyframes critical-breathe {
+  0%, 100% { box-shadow: 0 0 12px 0 oklch(60% 0.22 25 / 0.0), inset 0 0 24px 0 oklch(60% 0.22 25 / 0.0); }
+  50%      { box-shadow: 0 0 12px 0 oklch(60% 0.22 25 / 0.12), inset 0 0 24px 0 oklch(60% 0.22 25 / 0.06); }
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
+}
+
+/* Decision state: smooth entrance for the result banner */
+@keyframes decision-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 400ms var(--ease-out-quart) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 300ms var(--ease-out-quart) forwards;
+}
+
+.animate-backdrop-fade {
+  animation: backdrop-fade 200ms var(--ease-out-quart) forwards;
+}
+
+.animate-modal-slide-up {
+  animation: modal-slide-up 300ms var(--ease-out-quart) forwards;
+}
+
+.animate-status-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+.animate-critical-breathe {
+  animation: critical-breathe 3s ease-in-out infinite;
+}
+
+.animate-spinner {
+  animation: spinner 1s linear infinite;
+}
+
+.animate-decision-reveal {
+  animation: decision-reveal 400ms var(--ease-out-quart) forwards;
+}
+
+/* Stagger via inline style --i */
+.animate-stagger {
+  animation: fade-in-up 400ms var(--ease-out-quart) forwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+  opacity: 0;
+}
+
+/* Header entrance */
+.animate-header-reveal {
+  animation: fade-in-up 500ms var(--ease-out-expo) forwards;
+}
+
+/* Summary counter reveal */
+.animate-counter-reveal {
+  animation: fade-in-up 350ms var(--ease-out-quint) forwards;
+  animation-delay: 120ms;
+  opacity: 0;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Scrollbar ── */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-surface-0);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-2);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-surface-3);
+}
+
+/* ── Focus-visible ── */
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── Selection ── */
+
+::selection {
+  background: var(--color-accent-bg);
+  color: var(--color-ink);
+}
