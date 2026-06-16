@@ -47,14 +47,11 @@ export default function HITLReview({ report: initialReport }: { report: Complian
   }, [])
 
   const sortedTickets = [...report.tickets].sort((a, b) => {
-    const order = { Critical: 0, High: 1, Medium: 2, Low: 3 }
+    const order = { P0: 0, P1: 1, P2: 2 }
     return order[a.priority] - order[b.priority]
   })
 
-  const totalEffort = sortedTickets.reduce((sum, t) => sum + t.estimated_effort_days, 0)
-  const earliestDeadline = sortedTickets
-    .filter((t) => t.deadline)
-    .sort((a, b) => a.deadline.localeCompare(b.deadline))[0]?.deadline
+  const totalEffortWeeks = sortedTickets.reduce((sum, t) => sum + t.effort_weeks, 0)
 
   return (
     <div className="relative mx-auto min-h-screen max-w-3xl">
@@ -75,18 +72,22 @@ export default function HITLReview({ report: initialReport }: { report: Complian
           <dl className="flex items-center gap-1.5">
             <dt className="text-xs font-medium text-[var(--color-ink-dim)]">Total effort</dt>
             <dd className="text-xs font-semibold text-[var(--color-ink-muted)]" style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {totalEffort} engineer-days
+              {totalEffortWeeks} engineer-weeks
             </dd>
           </dl>
-          {earliestDeadline && (
-            <dl className="flex items-center gap-1.5">
-              <dt className="text-xs font-medium text-[var(--color-ink-dim)]">Earliest deadline</dt>
-              <dd className="text-xs font-semibold text-[var(--color-ink-muted)]" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                {earliestDeadline}
-              </dd>
-            </dl>
-          )}
+          <dl className="flex items-center gap-1.5">
+            <dt className="text-xs font-medium text-[var(--color-ink-dim)]">Deadline</dt>
+            <dd className="text-xs font-semibold text-[var(--color-ink-muted)]" style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {report.compliance_deadline}
+            </dd>
+          </dl>
         </div>
+        {report.sequencing_note && (
+          <div className="mt-3 rounded border border-[var(--color-surface-2)] bg-[var(--color-surface-0)] px-3 py-2">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-ink-dim)]">Sequencing</span>
+            <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">{report.sequencing_note}</p>
+          </div>
+        )}
       </section>
 
       <section className="px-6 pb-24 sm:px-8" aria-labelledby="tickets-heading">

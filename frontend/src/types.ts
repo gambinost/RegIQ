@@ -1,21 +1,27 @@
 export interface RemediationTicket {
   ticket_id: string
-  gap_id: string
   title: string
-  description: string
-  priority: 'Low' | 'Medium' | 'High' | 'Critical'
-  owner: string
-  estimated_effort_days: number
-  deadline: string
+  gap_ref: string
+  priority: 'P0' | 'P1' | 'P2'
+  owner_team: string
+  effort_weeks: number
+  depends_on: string[]
+  actions: string[]
+  done_criteria: string
 }
 
 export interface ComplianceReport {
   regulation_id: string
   regulation_name: string
   executive_summary: string
+  generated_at: string
+  compliance_deadline: string
+  weeks_to_deadline: number
+  critical_path_weeks: number
   total_gaps: number
   critical_gaps: number
   status: 'pending_approval' | 'approved' | 'rejected'
+  sequencing_note: string
   tickets: RemediationTicket[]
 }
 
