@@ -109,7 +109,7 @@ export default function App() {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchReport('REG-2024-001')
+      const data = await fetchReport('GDPR-2026-003')
       setReport(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')

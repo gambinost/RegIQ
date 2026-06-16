@@ -6,6 +6,7 @@ from models.report import ComplianceReport, RemediationTicket
 router = APIRouter(prefix="/api/v1/hitl", tags=["hitl"])
 
 _hitl_decisions: dict[str, str] = {}
+_generated_reports: dict[str, ComplianceReport] = {}
 
 _mock_report = ComplianceReport(
     regulation_id="GDPR-2026-003",
@@ -147,8 +148,18 @@ class DecisionResponse(BaseModel):
     decision: str
 
 
+@router.post("/report/{regulation_id}")
+async def store_hitl_report(regulation_id: str, report: ComplianceReport):
+    """Store a real generated report from the Remediation Planner agent."""
+    _generated_reports[regulation_id] = report
+    return {"status": "stored", "regulation_id": regulation_id}
+
+
 @router.get("/report/{regulation_id}", response_model=ComplianceReport)
 async def get_hitl_report(regulation_id: str):
+    """Return a generated report if available, otherwise fall back to mock."""
+    if regulation_id in _generated_reports:
+        return _generated_reports[regulation_id]
     return _mock_report
 
 

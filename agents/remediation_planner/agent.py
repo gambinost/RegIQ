@@ -11,8 +11,14 @@ from band.core.simple_adapter import SimpleAdapter
 from band.core.types import PlatformMessage
 
 from core.llm import get_balanced_llm
+from core.settings import get_settings
 from models.report import ComplianceReport
 from utils.loggers import log_info, log_success, log_error, log_warning
+
+try:
+    import httpx
+except ImportError:
+    httpx = None
 
 from agents.remediation_planner.prompts import (
     PLANNER_SYSTEM_PROMPT,
@@ -86,6 +92,25 @@ class RemediationPlannerAdapter(SimpleAdapter):
             except (json.JSONDecodeError, Exception) as e:
                 log_warning(f"JSON validation failed, sending raw output: {e}")
                 report = None
+
+            if report and httpx is not None:
+                try:
+                    settings = get_settings()
+                    api_url = (
+                        f"{settings.REGIQ_API_BASE_URL}/api/v1/hitl/report/{report.regulation_id}"
+                    )
+                    async with httpx.AsyncClient() as client:
+                        resp = await client.post(
+                            api_url,
+                            json=report.model_dump(),
+                            timeout=30.0,
+                        )
+                        if resp.status_code == 200:
+                            log_success(f"Report submitted to API: {api_url}")
+                        else:
+                            log_warning(f"API returned {resp.status_code}: {resp.text}")
+                except Exception as e:
+                    log_warning(f"Could not submit report to API: {e}")
 
             if report:
                 chat_message = raw.split("\n", 3)[0] if "\n" in raw else raw
