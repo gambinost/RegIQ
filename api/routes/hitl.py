@@ -5,74 +5,140 @@ from models.report import ComplianceReport, RemediationTicket
 
 router = APIRouter(prefix="/api/v1/hitl", tags=["hitl"])
 
-# In-memory store for demo (matches PRD: "In-memory dict in FastAPI is fine for demo")
 _hitl_decisions: dict[str, str] = {}
 
-# Pre-seed mock report for frontend development
 _mock_report = ComplianceReport(
-    regulation_id="REG-2024-001",
+    regulation_id="GDPR-2026-003",
     regulation_name="EU General Data Protection Regulation Amendment 2026",
     executive_summary="This regulation introduces stricter requirements for data retention and user deletion rights. Companies must now delete user data within 30 days of request, down from the previous 90-day window. Additionally, explicit consent must be renewed annually, and data portability must include AI training data. Failure to comply by September 1, 2026, carries penalties of up to 4% of global annual revenue.",
+    generated_at="2026-06-15T10:30:00Z",
+    compliance_deadline="2026-09-01",
+    weeks_to_deadline=11.0,
+    critical_path_weeks=9.0,
     total_gaps=7,
-    critical_gaps=2,
+    critical_gaps=4,
     status="pending_approval",
+    sequencing_note="FLAG-003 legal review is the foundational gate — REQ-005 and REQ-006 cannot proceed until legal sign-off is obtained. REQ-004 data inventory must complete before REQ-003 automation can be designed, and REQ-003 must precede REQ-001 erasure implementation. REQ-002 validation SOP is a parallel prerequisite for REQ-001.",
     tickets=[
         RemediationTicket(
-            ticket_id="TICK-001",
-            gap_id="GAP-001",
-            title="Reduce data deletion SLA from 60 days to 30 days",
-            description="Current SOP allows 60 days for full user deletion. The new regulation mandates 30 days. This requires updating the user deletion workflow, retraining customer support, and modifying automated scripts.",
-            priority="Critical",
-            owner="Platform Engineering",
-            estimated_effort_days=14.0,
-            deadline="2026-08-15",
+            ticket_id="REM-GDPR-2026-003-01",
+            title="Obtain legal review for 30-day erasure mandate interpretation",
+            gap_ref="FLAG-003",
+            priority="P0",
+            owner_team="Legal & Compliance",
+            effort_weeks=1.0,
+            depends_on=[],
+            actions=[
+                "Brief external counsel on Article 17 amendment text and recitals",
+                "Document legal interpretation of 'without undue delay' = 30 calendar days",
+                "Obtain written legal opinion on scope exceptions and exemptions",
+                "Distribute legal sign-off memo to Engineering and Compliance teams",
+            ],
+            done_criteria="Written legal opinion is approved and distributed to all teams implementing erasure changes",
         ),
         RemediationTicket(
-            ticket_id="TICK-002",
-            gap_id="GAP-002",
-            title="Implement annual consent renewal emails",
-            description="Currently, user consent is collected once at signup. The amendment requires explicit renewal every 12 months. Need to build a consent management system with automated reminders and grace-period handling.",
-            priority="Critical",
-            owner="Growth & Compliance",
-            estimated_effort_days=21.0,
-            deadline="2026-07-20",
+            ticket_id="REM-GDPR-2026-003-02",
+            title="Build cross-system data inventory for erasure pipeline",
+            gap_ref="REQ-004",
+            priority="P0",
+            owner_team="Data Platform",
+            effort_weeks=2.0,
+            depends_on=[],
+            actions=[
+                "Catalog all systems storing PII (databases, caches, backups, analytics)",
+                "Map data flow between systems to identify propagation paths",
+                "Document retention policies per system and data category",
+                "Create automated inventory sync job with schema change detection",
+            ],
+            done_criteria="Complete inventory of all PII-holding systems with verified data flow maps published to Confluence",
         ),
         RemediationTicket(
-            ticket_id="TICK-003",
-            gap_id="GAP-003",
-            title="Add AI training data to data portability exports",
-            description="Data portability requests currently include structured user profile data only. The amendment includes 'data used to train algorithms or AI models.' Need to identify and export model-training datasets.",
-            priority="High",
-            owner="ML Platform",
-            estimated_effort_days=10.0,
-            deadline="2026-08-01",
+            ticket_id="REM-GDPR-2026-003-03",
+            title="Deploy immutable audit logging infrastructure",
+            gap_ref="REQ-006",
+            priority="P0",
+            owner_team="Platform Engineering",
+            effort_weeks=2.0,
+            depends_on=["REM-GDPR-2026-003-01"],
+            actions=[
+                "Provision append-only log storage with tamper-evident hashing",
+                "Instrument erasure request receipt and completion timestamps",
+                "Build audit log query API for supervisory authority access",
+                "Implement 3-year retention policy with automated archival",
+            ],
+            done_criteria="Immutable audit logs capture all erasure events with timestamps and are queryable via API for 3 years minimum",
         ),
         RemediationTicket(
-            ticket_id="TICK-004",
-            gap_id="GAP-004",
-            title="Update privacy policy and legal documents",
-            description="Privacy policy, terms of service, and cookie policy must be updated to reflect the new retention periods and consent renewal requirements.",
-            priority="Medium",
-            owner="Legal",
-            estimated_effort_days=3.0,
-            deadline="2026-07-01",
+            ticket_id="REM-GDPR-2026-003-04",
+            title="Update consent validation SOP with annual renewal requirement",
+            gap_ref="REQ-002",
+            priority="P1",
+            owner_team="Growth & Compliance",
+            effort_weeks=2.0,
+            depends_on=[],
+            actions=[
+                "Rewrite SOP-UD-002 to include 12-month renewal cycle",
+                "Design consent renewal email template with opt-out link",
+                "Build grace-period handling logic (30-day post-expiry window)",
+                "Train customer support on new consent verification procedure",
+            ],
+            done_criteria="Updated SOP-UD-002 is approved and consent renewal emails are configured in the CRM with grace-period logic tested",
         ),
         RemediationTicket(
-            ticket_id="TICK-005",
-            gap_id="GAP-005",
+            ticket_id="REM-GDPR-2026-003-05",
+            title="Implement automated cross-system erasure workflow",
+            gap_ref="REQ-003",
+            priority="P0",
+            owner_team="Platform Engineering",
+            effort_weeks=3.0,
+            depends_on=["REM-GDPR-2026-003-02"],
+            actions=[
+                "Design orchestrated erasure DAG based on data inventory maps",
+                "Build idempotent deletion adapters for each PII system",
+                "Implement progress tracking and retry logic for partial failures",
+                "Add completion verification step that confirms zero remaining PII references",
+                "Integrate with audit logging infrastructure from REM-03",
+            ],
+            done_criteria="End-to-end automated erasure pipeline deletes all PII across all systems within 30 days and logs each step to audit infrastructure",
+        ),
+        RemediationTicket(
+            ticket_id="REM-GDPR-2026-003-06",
             title="Implement breach notification escalation within 72 hours",
-            description="Current breach notification protocol requires 5 business days. New regulation requires 72 hours. Update incident response runbook and pager automation.",
-            priority="Medium",
-            owner="Security",
-            estimated_effort_days=5.0,
-            deadline="2026-08-10",
+            gap_ref="REQ-005",
+            priority="P0",
+            owner_team="Security Operations",
+            effort_weeks=1.5,
+            depends_on=["REM-GDPR-2026-003-01", "REM-GDPR-2026-003-03"],
+            actions=[
+                "Update incident response runbook with 72-hour escalation timeline",
+                "Configure PagerDuty automation for immediate breach detection alerts",
+                "Build DPA notification template pre-filled with audit log references",
+                "Run tabletop exercise with Security, Legal, and Comms teams",
+            ],
+            done_criteria="Incident response runbook specifies 72-hour DPA notification and automated alerting is tested via tabletop exercise",
+        ),
+        RemediationTicket(
+            ticket_id="REM-GDPR-2026-003-07",
+            title="Reduce data deletion SLA from 60 days to 30 days",
+            gap_ref="REQ-001",
+            priority="P0",
+            owner_team="Platform Engineering",
+            effort_weeks=3.0,
+            depends_on=["REM-GDPR-2026-003-04", "REM-GDPR-2026-003-05"],
+            actions=[
+                "Retune batch deletion scheduler from 60-day to 30-day SLA window",
+                "Optimize long-running deletion queries for parallel execution",
+                "Add real-time SLA countdown dashboard for compliance monitoring",
+                "Conduct load test with 10x peak erasure request volume",
+            ],
+            done_criteria="Data deletion completes within 30 calendar days for all erasure requests, verified by load test at 10x peak volume",
         ),
     ],
 )
 
 
 class DecisionRequest(BaseModel):
-    decision: str  # "APPROVED" or "REJECTED"
+    decision: str
     reason: str | None = None
 
 
@@ -83,25 +149,21 @@ class DecisionResponse(BaseModel):
 
 @router.get("/report/{regulation_id}", response_model=ComplianceReport)
 async def get_hitl_report(regulation_id: str):
-    """Return the current ComplianceReport for HITL review."""
-    # For demo, return the seeded mock report regardless of ID
     return _mock_report
 
 
 @router.post("/respond", response_model=DecisionResponse)
 async def submit_hitl_decision(request: DecisionRequest):
-    """Accept human decision from HITL review UI."""
     decision = request.decision.upper()
     if decision not in ("APPROVED", "REJECTED"):
         raise ValueError("Decision must be APPROVED or REJECTED")
 
-    _hitl_decisions["REG-2024-001"] = decision
+    _hitl_decisions["GDPR-2026-003"] = decision
     return DecisionResponse(status="received", decision=decision)
 
 
 @router.get("/status/{regulation_id}")
 async def get_hitl_status(regulation_id: str):
-    """Return the current decision status for a regulation."""
     decision = _hitl_decisions.get(regulation_id)
     if not decision:
         return {"status": "pending", "decision": None}
