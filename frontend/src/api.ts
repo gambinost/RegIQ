@@ -10,8 +10,11 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export async function fetchReport(regulationId: string): Promise<ComplianceReport> {
-  const res = await fetch(`${API_BASE}/hitl/report/${regulationId}`, {
+export async function fetchReport(regulationId?: string): Promise<ComplianceReport> {
+  const url = regulationId
+    ? `${API_BASE}/hitl/report/${regulationId}`
+    : `${API_BASE}/hitl/latest`
+  const res = await fetch(url, {
     headers: { Accept: 'application/json' },
   })
   return handleResponse<ComplianceReport>(res)

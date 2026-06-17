@@ -41,9 +41,27 @@ def _extract_json(text: str) -> str:
     return text[brace:]
 
 
+async def _resolve_human_handle(tools) -> str | None:
+    try:
+        participants = await tools.get_participants()
+        for p in participants:
+            handle = getattr(p, "handle", None) or (
+                p.get("handle", "") if isinstance(p, dict) else ""
+            )
+            if handle and "/regiq-" not in handle:
+                return handle
+    except Exception:
+        pass
+    return None
+
+
 class RemediationPlannerAdapter(SimpleAdapter):
     SUPPORTED_EMIT = frozenset({Emit.EXECUTION})
     SUPPORTED_CAPABILITIES = frozenset()
+
+    def __init__(self):
+        super().__init__()
+        self._human_handle: str | None = None
 
     async def on_message(
         self,
@@ -57,6 +75,10 @@ class RemediationPlannerAdapter(SimpleAdapter):
         room_id: str,
     ) -> None:
         log_info(f"Remediation Planner received message from {msg.sender_name}")
+
+        if not self._human_handle:
+            self._human_handle = await _resolve_human_handle(tools)
+        mention = self._human_handle
 
         content = msg.content
         if not content or not content.strip():
@@ -112,20 +134,17 @@ class RemediationPlannerAdapter(SimpleAdapter):
                 except Exception as e:
                     log_warning(f"Could not submit report to API: {e}")
 
-            if report:
-                chat_message = raw.split("\n", 3)[0] if "\n" in raw else raw
-                chat_message = raw
-            else:
-                chat_message = raw
-
-            chat_message += PLANNER_TERMINAL_PROMPT
+            chat_message = raw + PLANNER_TERMINAL_PROMPT
 
             log_success("Remediation plan complete — terminal agent, no cascade")
-            await tools.send_message(chat_message)
+            await tools.send_message(chat_message, mentions=[mention] if mention else [])
 
         except Exception as e:
             log_error(f"Error generating remediation plan: {e}")
-            await tools.send_message("Error generating remediation plan. Please retry.")
+            await tools.send_message(
+                "Error generating remediation plan. Please retry.",
+                mentions=[mention] if mention else [],
+            )
 
 
 async def main():
