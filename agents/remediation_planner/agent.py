@@ -173,12 +173,10 @@ class RemediationPlannerAdapter(SimpleAdapter):
                 # Human is in the room — send as a regular @mentioned message
                 await tools.send_message(chat_message, mentions=[mention])
             else:
-                # No human in room (API-triggered run). Post the report as
-                # a task event. send_event doesn't require mentions and
-                # doesn't trigger on_message on any agent. Band forbids
-                # self-mentions (cannot_mention_self 422), so this is the
-                # correct way to make the final report visible in the
-                # Band chat UI.
+                # No human in room (edge case — user peer wasn't found at
+                # trigger time). Post the report as a task event so it's at
+                # least visible in the Band UI events panel. send_event
+                # doesn't require mentions and doesn't trigger on_message.
                 log_info("No human in room — posting report as task event to Band chat")
                 await tools.send_event(
                     chat_message,

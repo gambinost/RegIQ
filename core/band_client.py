@@ -142,6 +142,59 @@ async def _find_cascade_peers(
     return found
 
 
+async def _find_user_peer(
+    client: AsyncRestClient,
+    exclude_handle: str | None = None,
+) -> dict[str, str] | None:
+    """Find a human User peer (not an Agent) to add to the room.
+
+    The user is the room owner / demo presenter. Adding them as a
+    participant lets the terminal Planner agent @mention them to post
+    the final remediation report as a regular chat message in the Band
+    UI main flow (where judges look), instead of an event in a side
+    panel.
+
+    Args:
+        client: The authenticated AsyncRestClient.
+        exclude_handle: If provided, skip peers whose handle matches.
+
+    Returns dict with 'id', 'name', 'handle' or None if no user peer found.
+    """
+    exclude_lower = exclude_handle.lower() if exclude_handle else None
+
+    page = 1
+    while True:
+        response = await client.agent_api_peers.list_agent_peers(
+            page=page,
+            page_size=100,
+            request_options=DEFAULT_REQUEST_OPTIONS,
+        )
+
+        if not response.data:
+            break
+
+        for peer in response.data:
+            peer_handle = getattr(peer, "handle", None) or ""
+            if exclude_lower and exclude_lower in peer_handle.lower():
+                continue
+            peer_type = getattr(peer, "type", None)
+            if peer_type == "User":
+                return {
+                    "id": peer.id,
+                    "name": peer.name,
+                    "handle": peer_handle,
+                }
+
+        total_pages = (
+            getattr(response.metadata, "total_pages", None) or 1 if response.metadata else 1
+        )
+        if page >= total_pages:
+            break
+        page += 1
+
+    return None
+
+
 async def trigger_pipeline(
     regulation_text: str,
     target_handle: str | None = None,
@@ -227,6 +280,24 @@ async def trigger_pipeline(
             SENDER_ROLE: self_identity,
         }
 
+        # Step 2b: Find a human user peer to add to the room.
+        # The user is the room owner / demo presenter. Adding them lets
+        # the terminal Planner @mention them to post the final remediation
+        # report as a regular chat message in the Band UI main flow
+        # (where judges look), instead of an event in a side panel.
+        log_info("Band client: searching peers for a human user...")
+        user_peer = await _find_user_peer(client, exclude_handle=self_identity["handle"])
+        if user_peer:
+            log_info(
+                f"Band client: found user {user_peer['name']} "
+                f"(id={user_peer['id']}, handle={user_peer['handle']}) — will be @mentionable by Planner"
+            )
+        else:
+            log_warning(
+                "Band client: no human user peer found — Planner will fall back to send_event "
+                "(report may appear in events panel, not main chat)"
+            )
+
         # The Monitor is required — it's the cascade entry point
         monitor_peer = all_agents.get(ENTRY_AGENT_ROLE)
         if not monitor_peer:
@@ -280,6 +351,18 @@ async def trigger_pipeline(
                 request_options=DEFAULT_REQUEST_OPTIONS,
             )
             log_success(f"Band client: {role} added as participant")
+
+        # Step 4b: Add the human user as a participant (if found).
+        # This lets the Planner @mention them to post the final report
+        # as a regular chat message in the Band UI main flow.
+        if user_peer:
+            log_info(f"Band client: adding user {user_peer['name']} to room...")
+            await client.agent_api_participants.add_agent_chat_participant(
+                chat_id=room_id,
+                participant=ParticipantRequest(participant_id=user_peer["id"]),
+                request_options=DEFAULT_REQUEST_OPTIONS,
+            )
+            log_success(f"Band client: user {user_peer['name']} added as participant")
 
         # Step 5: Send the regulation message mentioning ONLY the Monitor
         # (the cascade entry point). Subsequent @mentions are handled by
