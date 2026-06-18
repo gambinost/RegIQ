@@ -262,10 +262,17 @@ async def trigger_pipeline(
         room_id = chat_response.data.id
         log_success(f"Band client: created room {room_id}")
 
-        # Step 4: Add ALL cascade agents as participants.
-        # The sender (Planner) is auto-added as room creator, but we add it
-        # explicitly for clarity and to ensure get_participants() sees it.
+        # Step 4: Add cascade agents as participants.
+        # Skip the sender — it's auto-added as the room creator, so adding
+        # it again returns 409 Conflict. It's still a full participant:
+        # get_participants() sees it, and it can be @mentioned (the Planner
+        # uses this to self-mention when posting the final report).
         for role, peer in all_agents.items():
+            if role == SENDER_ROLE:
+                log_info(
+                    f"Band client: {role} is the room creator — already a participant, skipping add"
+                )
+                continue
             log_info(f"Band client: adding {role} ({peer['name']}) to room...")
             await client.agent_api_participants.add_agent_chat_participant(
                 chat_id=room_id,
