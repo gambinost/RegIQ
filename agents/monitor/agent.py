@@ -5,6 +5,7 @@ load_dotenv()  # noqa: E402 — must run before langchain/langsmith imports
 import asyncio  # noqa: E402
 import time  # noqa: E402
 
+from langsmith import traceable  # noqa: E402
 from band import Agent, Emit  # noqa: E402
 from band.core.simple_adapter import SimpleAdapter  # noqa: E402
 from band.core.types import PlatformMessage  # noqa: E402
@@ -72,6 +73,7 @@ class MonitorAdapter(SimpleAdapter):
             )
         return self._retry_llm
 
+    @traceable(run_type="llm", name="Monitor._invoke_with_retry")
     async def _invoke_with_retry(self, content: str) -> RegulationAssessment:
         structured_llm = self._get_structured_llm()
 
@@ -89,6 +91,7 @@ class MonitorAdapter(SimpleAdapter):
             )
             return assessment
 
+    @traceable(run_type="chain", name="Monitor.on_message")
     async def on_message(
         self,
         msg: PlatformMessage,

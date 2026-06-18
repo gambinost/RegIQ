@@ -10,6 +10,21 @@ _generated_reports: dict[str, ComplianceReport] = {}
 _latest_report_id: str | None = None
 _pipeline_status: dict[str, dict[str, str]] = {}
 
+
+class ReportSummary(BaseModel):
+    """Lightweight summary of a generated report for dashboard listing."""
+
+    regulation_id: str
+    regulation_name: str
+    generated_at: str
+    status: str
+    total_gaps: int
+    critical_gaps: int
+    ticket_count: int
+    critical_path_weeks: float
+    weeks_to_deadline: float
+
+
 _mock_report = ComplianceReport(
     regulation_id="GDPR-2026-003",
     regulation_name="EU General Data Protection Regulation Amendment 2026",
@@ -193,6 +208,34 @@ async def get_hitl_status(regulation_id: str):
     if not decision:
         return {"status": "pending", "decision": None}
     return {"status": "completed", "decision": decision}
+
+
+@router.get("/reports", response_model=list[ReportSummary])
+async def list_all_reports():
+    """List all generated reports with their decision status.
+
+    Returns reports sorted by generated_at descending (newest first).
+    Used by the dashboard to show analysis history.
+    """
+    summaries: list[ReportSummary] = []
+    for reg_id, report in _generated_reports.items():
+        decision = _hitl_decisions.get(reg_id)
+        status = decision.lower() if decision else "pending_approval"
+        summaries.append(
+            ReportSummary(
+                regulation_id=report.regulation_id,
+                regulation_name=report.regulation_name,
+                generated_at=report.generated_at,
+                status=status,
+                total_gaps=report.total_gaps,
+                critical_gaps=report.critical_gaps,
+                ticket_count=len(report.tickets),
+                critical_path_weeks=report.critical_path_weeks,
+                weeks_to_deadline=report.weeks_to_deadline,
+            )
+        )
+    summaries.sort(key=lambda r: r.generated_at, reverse=True)
+    return summaries
 
 
 @router.post("/pipeline/status/{room_id}")

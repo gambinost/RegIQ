@@ -241,7 +241,7 @@ export default function TriggerPage() {
             </span>
           </button>
           <p className="mt-2 text-center text-xs text-[var(--color-ink-dim)]">
-            5 agents will process your regulation in sequence (~75 seconds)
+            5 agents will process your regulation in sequence
           </p>
         </div>
       </div>

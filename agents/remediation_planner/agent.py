@@ -6,6 +6,7 @@ import asyncio
 import json
 import time
 
+from langsmith import traceable
 from band import Agent, Emit
 from band.core.simple_adapter import SimpleAdapter
 from band.core.types import PlatformMessage
@@ -70,6 +71,7 @@ class RemediationPlannerAdapter(SimpleAdapter):
         super().__init__()
         self._human_handle: str | None = None
 
+    @traceable(run_type="chain", name="RemediationPlanner.on_message")
     async def on_message(
         self,
         msg: PlatformMessage,

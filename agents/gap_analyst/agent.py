@@ -6,6 +6,7 @@ import asyncio
 import re
 import time
 
+from langsmith import traceable
 from band import Agent, Emit
 from band.core.simple_adapter import SimpleAdapter
 from band.core.types import PlatformMessage
@@ -33,6 +34,7 @@ class GapAnalystAdapter(SimpleAdapter):
         super().__init__()
         self._cascade_handle: str | None = None
 
+    @traceable(run_type="chain", name="GapAnalyst.on_message")
     async def on_message(
         self,
         msg: PlatformMessage,

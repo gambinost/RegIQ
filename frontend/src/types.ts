@@ -71,3 +71,15 @@ export type AgentStatus = 'pending' | 'processing' | 'complete'
 export interface PipelineStatus {
   [key: string]: string
 }
+
+export interface ReportSummary {
+  regulation_id: string
+  regulation_name: string
+  generated_at: string
+  status: 'pending_approval' | 'approved' | 'rejected'
+  total_gaps: number
+  critical_gaps: number
+  ticket_count: number
+  critical_path_weeks: number
+  weeks_to_deadline: number
+}

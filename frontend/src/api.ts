@@ -6,6 +6,7 @@ import type {
   TriggerRequest,
   TriggerResponse,
   PipelineStatus,
+  ReportSummary,
 } from './types'
 
 const API_BASE = '/api/v1'
@@ -64,4 +65,11 @@ export async function fetchPipelineStatus(roomId: string): Promise<PipelineStatu
     headers: { Accept: 'application/json' },
   })
   return handleResponse<PipelineStatus>(res)
+}
+
+export async function fetchAllReports(): Promise<ReportSummary[]> {
+  const res = await fetch(`${API_BASE}/hitl/reports`, {
+    headers: { Accept: 'application/json' },
+  })
+  return handleResponse<ReportSummary[]>(res)
 }
