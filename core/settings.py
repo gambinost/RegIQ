@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     THENVOI_REST_URL: str = "https://app.band.ai/"
     THENVOI_WS_URL: str = "wss://app.band.ai/api/v1/socket/websocket"
 
+    REGIQ_API_BASE_URL: str = "http://localhost:8000"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
