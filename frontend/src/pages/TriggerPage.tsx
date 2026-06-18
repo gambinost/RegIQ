@@ -33,25 +33,26 @@ export default function TriggerPage() {
   const selectedReg = regulations.find((r) => r.regulation_id === selectedId)
 
   const handleTrigger = useCallback(async () => {
-    const text = customText.trim() || selectedReg?.summary || ''
-    if (!text) {
-      setError('Select a regulation or enter custom text')
-      return
-    }
-
     setLoading(true)
     setError(null)
     try {
-      const response = await triggerCascade({
-        regulation_text: text,
-        regulation_title: selectedReg?.title || 'Custom Regulation',
-      })
+      const response = await triggerCascade(
+        selectedId
+          ? {
+              regulation_id: selectedId,
+              regulation_title: selectedReg?.title,
+            }
+          : {
+              regulation_text: customText.trim(),
+              regulation_title: 'Custom Regulation',
+            },
+      )
       navigate(`/pipeline/${response.room_id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to trigger cascade')
       setLoading(false)
     }
-  }, [customText, selectedReg, navigate])
+  }, [customText, selectedReg, selectedId, navigate])
 
   return (
     <div className="mx-auto min-h-screen max-w-3xl">

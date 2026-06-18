@@ -56,7 +56,8 @@ export interface RegulationOption {
 }
 
 export interface TriggerRequest {
-  regulation_text: string
+  regulation_id?: string
+  regulation_text?: string
   regulation_title?: string
 }
 

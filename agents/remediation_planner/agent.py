@@ -71,7 +71,7 @@ class RemediationPlannerAdapter(SimpleAdapter):
         super().__init__()
         self._human_handle: str | None = None
 
-    @traceable(run_type="chain", name="RemediationPlanner.on_message")
+    @traceable(run_type="chain", name="RemediationPlanner")
     async def on_message(
         self,
         msg: PlatformMessage,

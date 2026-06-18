@@ -34,7 +34,7 @@ class GapAnalystAdapter(SimpleAdapter):
         super().__init__()
         self._cascade_handle: str | None = None
 
-    @traceable(run_type="chain", name="GapAnalyst.on_message")
+    @traceable(run_type="chain", name="GapAnalyst")
     async def on_message(
         self,
         msg: PlatformMessage,

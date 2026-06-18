@@ -73,7 +73,7 @@ class MonitorAdapter(SimpleAdapter):
             )
         return self._retry_llm
 
-    @traceable(run_type="llm", name="Monitor._invoke_with_retry")
+    @traceable(run_type="llm", name="Monitor")
     async def _invoke_with_retry(self, content: str) -> RegulationAssessment:
         structured_llm = self._get_structured_llm()
 
@@ -91,7 +91,7 @@ class MonitorAdapter(SimpleAdapter):
             )
             return assessment
 
-    @traceable(run_type="chain", name="Monitor.on_message")
+    @traceable(run_type="chain", name="Monitor")
     async def on_message(
         self,
         msg: PlatformMessage,
@@ -124,7 +124,10 @@ class MonitorAdapter(SimpleAdapter):
             self._cascade_handle = cascade_handle
             mention = cascade_handle or slug
 
-            chat_message = format_assessment(assessment) + "\n\n" + URGENCY_CASCADE_PROMPT
+            chat_message = format_assessment(assessment)
+            chat_message += "\n\n---\n### Original Regulation Text\n\n"
+            chat_message += content
+            chat_message += "\n\n" + URGENCY_CASCADE_PROMPT
             chat_message = append_timing_block(chat_message, "monitor", time.time() - agent_start)
 
             await tools.send_message(chat_message, mentions=[mention])

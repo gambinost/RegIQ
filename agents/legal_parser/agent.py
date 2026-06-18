@@ -26,7 +26,7 @@ class LegalParserAdapter(SimpleAdapter):
         super().__init__()
         self._cascade_handle: str | None = None
 
-    @traceable(run_type="chain", name="LegalParser.on_message")
+    @traceable(run_type="chain", name="LegalParser")
     async def on_message(
         self,
         msg: PlatformMessage,

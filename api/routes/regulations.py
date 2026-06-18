@@ -23,7 +23,8 @@ _MOCK_REGULATIONS_DIR = Path(__file__).resolve().parent.parent.parent / "data" /
 
 
 class TriggerRequest(BaseModel):
-    regulation_text: str
+    regulation_id: str | None = None
+    regulation_text: str | None = None
     regulation_title: str | None = None
     target_handle: str | None = None
 
@@ -50,14 +51,42 @@ async def trigger_cascade(request: TriggerRequest):
     and sends the regulation text mentioning the Monitor. The Monitor
     will process the regulation and cascade through the pipeline.
     """
-    if not request.regulation_text or not request.regulation_text.strip():
-        raise HTTPException(status_code=400, detail="regulation_text is required")
+    if request.regulation_id:
+        json_file = _MOCK_REGULATIONS_DIR / f"{request.regulation_id}.json"
+        if not json_file.exists():
+            raise HTTPException(
+                status_code=404,
+                detail=f"Regulation file not found: {request.regulation_id}",
+            )
+        try:
+            data = json.loads(json_file.read_text(encoding="utf-8"))
+            regulation_text = data.get("full_text", "")
+            if not regulation_text:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Regulation {request.regulation_id} has no full_text field",
+                )
+        except (json.JSONDecodeError, KeyError) as e:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Failed to parse regulation file {request.regulation_id}: {e}",
+            )
+    elif request.regulation_text:
+        regulation_text = request.regulation_text
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Either regulation_id or regulation_text is required",
+        )
 
-    log_info(f"Trigger request received: {request.regulation_title or 'untitled'}")
+    log_info(
+        f"Trigger request received: "
+        f"{request.regulation_title or request.regulation_id or 'custom text'}"
+    )
 
     try:
         room_id = await trigger_pipeline(
-            regulation_text=request.regulation_text,
+            regulation_text=regulation_text,
             target_handle=request.target_handle,
         )
         log_info(f"Cascade triggered in room {room_id}")

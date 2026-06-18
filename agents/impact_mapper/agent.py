@@ -35,7 +35,7 @@ class ImpactMapperAdapter(SimpleAdapter):
         super().__init__()
         self._cascade_handle: str | None = None
 
-    @traceable(run_type="chain", name="ImpactMapper.on_message")
+    @traceable(run_type="chain", name="ImpactMapper")
     async def on_message(
         self,
         msg: PlatformMessage,
