@@ -52,24 +52,24 @@ async def trigger_cascade(request: TriggerRequest):
     will process the regulation and cascade through the pipeline.
     """
     if request.regulation_id:
-        json_file = _MOCK_REGULATIONS_DIR / f"{request.regulation_id}.json"
-        if not json_file.exists():
+        regulation_text = None
+        for json_file in _MOCK_REGULATIONS_DIR.glob("*.json"):
+            try:
+                data = json.loads(json_file.read_text(encoding="utf-8"))
+                if data.get("regulation_id") == request.regulation_id:
+                    regulation_text = data.get("full_text", "")
+                    break
+            except (json.JSONDecodeError, KeyError):
+                continue
+        if regulation_text is None:
             raise HTTPException(
                 status_code=404,
-                detail=f"Regulation file not found: {request.regulation_id}",
+                detail=f"Regulation not found: {request.regulation_id}",
             )
-        try:
-            data = json.loads(json_file.read_text(encoding="utf-8"))
-            regulation_text = data.get("full_text", "")
-            if not regulation_text:
-                raise HTTPException(
-                    status_code=422,
-                    detail=f"Regulation {request.regulation_id} has no full_text field",
-                )
-        except (json.JSONDecodeError, KeyError) as e:
+        if not regulation_text:
             raise HTTPException(
                 status_code=422,
-                detail=f"Failed to parse regulation file {request.regulation_id}: {e}",
+                detail=f"Regulation {request.regulation_id} has no full_text field",
             )
     elif request.regulation_text:
         regulation_text = request.regulation_text
