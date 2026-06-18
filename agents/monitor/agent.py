@@ -108,7 +108,7 @@ class MonitorAdapter(SimpleAdapter):
             return
 
         agent_start = time.time()
-        await post_heartbeat("monitor", "processing")
+        await post_heartbeat("monitor", "processing", room_id=room_id)
 
         try:
             assessment = await self._invoke_with_retry(content)
@@ -125,7 +125,7 @@ class MonitorAdapter(SimpleAdapter):
             chat_message = append_timing_block(chat_message, "monitor", time.time() - agent_start)
 
             await tools.send_message(chat_message, mentions=[mention])
-            await post_heartbeat("monitor", "complete", time.time() - agent_start)
+            await post_heartbeat("monitor", "complete", time.time() - agent_start, room_id=room_id)
             log_success(f"Sent assessment to room, @mentioning {mention}")
 
         except Exception as e:

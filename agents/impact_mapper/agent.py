@@ -56,7 +56,7 @@ class ImpactMapperAdapter(SimpleAdapter):
         cleaned_content, timing_blocks = extract_timing_blocks(content)
 
         agent_start = time.time()
-        await post_heartbeat("impact_mapper", "processing")
+        await post_heartbeat("impact_mapper", "processing", room_id=room_id)
 
         try:
             rag_context = await query_knowledge_base(cleaned_content)
@@ -94,7 +94,9 @@ class ImpactMapperAdapter(SimpleAdapter):
 
             log_success(f"Impact mapping complete, sending to {mention}")
             await tools.send_message(chat_message, mentions=[mention])
-            await post_heartbeat("impact_mapper", "complete", time.time() - agent_start)
+            await post_heartbeat(
+                "impact_mapper", "complete", time.time() - agent_start, room_id=room_id
+            )
 
         except Exception as e:
             log_error(f"Error mapping impact: {e}")

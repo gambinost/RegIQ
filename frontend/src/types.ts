@@ -46,3 +46,28 @@ export interface DecisionResponse {
   status: string
   decision: string
 }
+
+export interface RegulationOption {
+  regulation_id: string
+  title: string
+  jurisdiction: string
+  summary: string
+  industry_tags: string[]
+}
+
+export interface TriggerRequest {
+  regulation_text: string
+  regulation_title?: string
+}
+
+export interface TriggerResponse {
+  status: string
+  room_id: string
+  regulation_title: string | null
+}
+
+export type AgentStatus = 'pending' | 'processing' | 'complete'
+
+export interface PipelineStatus {
+  [key: string]: string
+}

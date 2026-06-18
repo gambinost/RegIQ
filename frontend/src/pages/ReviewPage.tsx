@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import type { ComplianceReport } from './types'
-import { fetchReport } from './api'
-import HITLReview from './components/HITLReview'
+import { useParams } from 'react-router-dom'
+import type { ComplianceReport } from '../types'
+import { fetchReport } from '../api'
+import HITLReview from '../components/HITLReview'
 
 function SkeletonCard() {
   return (
@@ -25,7 +26,6 @@ function SkeletonCard() {
 function LoadingState() {
   return (
     <div className="relative mx-auto min-h-screen max-w-3xl animate-pulse">
-      {/* Header skeleton */}
       <div className="border-b border-[var(--color-surface-2)] px-6 py-5 sm:px-8">
         <div className="flex items-center justify-between">
           <div className="min-w-0">
@@ -35,8 +35,6 @@ function LoadingState() {
           <div className="h-7 w-32 rounded-full bg-[var(--color-surface-2)]" />
         </div>
       </div>
-
-      {/* Summary bar skeleton */}
       <div className="grid grid-cols-2 gap-3 px-6 py-4 sm:px-8">
         <div className="rounded-lg border border-[var(--color-surface-2)] px-4 py-3" style={{ background: 'var(--color-surface-1)' }}>
           <div className="mx-auto h-8 w-8 rounded bg-[var(--color-surface-2)]" />
@@ -47,16 +45,12 @@ function LoadingState() {
           <div className="mx-auto mt-1 h-3 w-20 rounded bg-[var(--color-surface-2)]" />
         </div>
       </div>
-
-      {/* Executive summary skeleton */}
       <div className="px-6 pb-5 sm:px-8">
         <div className="h-4 w-32 rounded bg-[var(--color-surface-2)]" />
         <div className="mt-2 h-4 w-full rounded bg-[var(--color-surface-2)]" />
         <div className="mt-1 h-4 w-5/6 rounded bg-[var(--color-surface-2)]" />
         <div className="mt-1 h-4 w-4/5 rounded bg-[var(--color-surface-2)]" />
       </div>
-
-      {/* Tickets skeleton */}
       <div className="px-6 pb-24 sm:px-8">
         <div className="mb-3 flex items-center justify-between">
           <div className="h-4 w-32 rounded bg-[var(--color-surface-2)]" />
@@ -100,31 +94,45 @@ function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) 
   )
 }
 
-export default function App() {
+export default function ReviewPage() {
+  const { regId } = useParams()
   const [report, setReport] = useState<ComplianceReport | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const loadReport = async () => {
+  useEffect(() => {
+    let cancelled = false
+
+    fetchReport(regId)
+      .then((data) => {
+        if (!cancelled) {
+          setReport(data)
+          setError(null)
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Unknown error')
+          setLoading(false)
+        }
+      })
+
+    return () => { cancelled = true }
+  }, [regId])
+
+  const retry = () => {
     setLoading(true)
     setError(null)
-    try {
-      const data = await fetchReport()
-      setReport(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
-    } finally {
-      setLoading(false)
-    }
+    fetchReport(regId)
+      .then((data) => setReport(data))
+      .catch((err) => setError(err instanceof Error ? err.message : 'Unknown error'))
+      .finally(() => setLoading(false))
   }
 
-  useEffect(() => {
-    loadReport()
-  }, [])
-
   if (loading) return <LoadingState />
-  if (error) return <ErrorState error={error} onRetry={loadReport} />
-  if (!report) return <ErrorState error="No report data available" onRetry={loadReport} />
+  if (error) return <ErrorState error={error} onRetry={retry} />
+  if (!report) return <ErrorState error="No report data available" onRetry={retry} />
 
   return <HITLReview report={report} />
 }

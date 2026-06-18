@@ -62,6 +62,28 @@ async def _resolve_human_handle(tools) -> str | None:
     return None
 
 
+async def _resolve_self_handle(tools) -> str | None:
+    """Find the Planner's own handle from room participants.
+
+    Used to @mention itself when posting the final remediation report to
+    the Band chat — there's no human to @mention in API-triggered rooms,
+    so the Planner posts to itself to make the report visible in the
+    Band chat UI. The self-message guard at the top of on_message
+    prevents re-processing.
+    """
+    try:
+        participants = await tools.get_participants()
+        for p in participants:
+            handle = getattr(p, "handle", None) or (
+                p.get("handle", "") if isinstance(p, dict) else ""
+            )
+            if handle and "regiq-planner" in handle.lower():
+                return handle
+    except Exception:
+        pass
+    return None
+
+
 class RemediationPlannerAdapter(SimpleAdapter):
     SUPPORTED_EMIT = frozenset({Emit.EXECUTION})
     SUPPORTED_CAPABILITIES = frozenset()
@@ -69,6 +91,7 @@ class RemediationPlannerAdapter(SimpleAdapter):
     def __init__(self):
         super().__init__()
         self._human_handle: str | None = None
+        self._self_handle: str | None = None
 
     async def on_message(
         self,
@@ -83,8 +106,19 @@ class RemediationPlannerAdapter(SimpleAdapter):
     ) -> None:
         log_info(f"Remediation Planner received message from {msg.sender_name}")
 
+        # Self-message guard: skip messages from ourselves.
+        # When no human is in the room, the Planner @mentions itself to
+        # post the final report to the Band chat. Without this guard,
+        # that self-mention would re-trigger on_message → infinite loop.
+        sender_lower = (msg.sender_name or "").lower()
+        if "planner" in sender_lower:
+            log_info("Self-message detected, skipping (report already posted to Band chat)")
+            return
+
         if not self._human_handle:
             self._human_handle = await _resolve_human_handle(tools)
+        if not self._self_handle:
+            self._self_handle = await _resolve_self_handle(tools)
         mention = self._human_handle
 
         content = msg.content
@@ -96,7 +130,7 @@ class RemediationPlannerAdapter(SimpleAdapter):
         cleaned_content, timing_blocks = extract_timing_blocks(content)
 
         agent_start = time.time()
-        await post_heartbeat("remediation_planner", "processing")
+        await post_heartbeat("remediation_planner", "processing", room_id=room_id)
 
         try:
             llm = get_balanced_llm()
@@ -160,15 +194,31 @@ class RemediationPlannerAdapter(SimpleAdapter):
             chat_message = raw + PLANNER_TERMINAL_PROMPT
 
             log_success("Remediation plan complete — terminal agent, no cascade")
-            await tools.send_message(chat_message, mentions=[mention] if mention else [])
-            await post_heartbeat("remediation_planner", "complete", time.time() - agent_start)
+            if mention:
+                await tools.send_message(chat_message, mentions=[mention])
+            elif self._self_handle:
+                # No human in room (API-triggered run). @mention ourselves
+                # to post the final report to the Band chat so it's visible
+                # in the UI. The self-message guard prevents re-processing.
+                log_info("No human in room — posting report to Band chat via self-mention")
+                await tools.send_message(chat_message, mentions=[self._self_handle])
+            else:
+                log_warning(
+                    "No human or self handle found — report delivered via API only, "
+                    "not visible in Band chat"
+                )
+            await post_heartbeat(
+                "remediation_planner", "complete", time.time() - agent_start, room_id=room_id
+            )
 
         except Exception as e:
             log_error(f"Error generating remediation plan: {e}")
-            await tools.send_message(
-                "Error generating remediation plan. Please retry.",
-                mentions=[mention] if mention else [],
-            )
+            error_mention = mention or self._self_handle
+            if error_mention:
+                await tools.send_message(
+                    "Error generating remediation plan. Please retry.",
+                    mentions=[error_mention],
+                )
 
 
 async def main():

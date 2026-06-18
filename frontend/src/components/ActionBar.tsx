@@ -1,3 +1,5 @@
+import { useNavigate } from 'react-router-dom'
+
 interface ActionBarProps {
   onApprove: () => void
   onReject: () => void
@@ -17,6 +19,7 @@ export default function ActionBar({
   submitted,
   decision,
 }: ActionBarProps) {
+  const navigate = useNavigate()
 
   if (submitted) {
     const isApproved = decision === 'APPROVED'
@@ -24,7 +27,7 @@ export default function ActionBar({
       <div
         className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--color-surface-2)] bg-[var(--color-surface-0)]/90 backdrop-blur-md px-6 py-4 sm:px-8"
       >
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto flex max-w-3xl flex-col gap-2.5">
           <div
             className="animate-decision-reveal flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium"
             style={{
@@ -43,6 +46,16 @@ export default function ActionBar({
             </svg>
             {isApproved ? 'Remediation plan approved' : 'Remediation plan rejected'}
           </div>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="flex items-center justify-center gap-2 rounded-lg border border-[var(--color-surface-2)] bg-[var(--color-surface-1)] px-4 py-2.5 text-sm font-semibold text-[var(--color-ink-muted)] transition-all duration-150 hover:border-[var(--color-accent-muted)] hover:text-[var(--color-ink)] active:scale-[0.98]"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Run Another Analysis
+          </button>
         </div>
       </div>
     )

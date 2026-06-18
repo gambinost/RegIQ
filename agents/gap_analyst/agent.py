@@ -55,7 +55,7 @@ class GapAnalystAdapter(SimpleAdapter):
         cleaned_content, timing_blocks = extract_timing_blocks(content)
 
         agent_start = time.time()
-        await post_heartbeat("gap_analyst", "processing")
+        await post_heartbeat("gap_analyst", "processing", room_id=room_id)
 
         try:
             llm = get_balanced_llm()
@@ -85,7 +85,9 @@ class GapAnalystAdapter(SimpleAdapter):
 
             log_success(f"Gap analysis complete, sending to {mention}")
             await tools.send_message(chat_message, mentions=[mention])
-            await post_heartbeat("gap_analyst", "complete", time.time() - agent_start)
+            await post_heartbeat(
+                "gap_analyst", "complete", time.time() - agent_start, room_id=room_id
+            )
 
         except Exception as e:
             log_error(f"Error analyzing gaps: {e}")

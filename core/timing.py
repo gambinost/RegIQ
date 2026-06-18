@@ -87,16 +87,30 @@ except ImportError:
     httpx = None
 
 
-async def post_heartbeat(agent_name: str, status: str, duration: float | None = None) -> None:
-    """Post an agent status update to the FastAPI pipeline status endpoint."""
+async def post_heartbeat(
+    agent_name: str,
+    status: str,
+    duration: float | None = None,
+    room_id: str = "default",
+) -> None:
+    """Post an agent status update to the FastAPI pipeline status endpoint.
+
+    Args:
+        agent_name: Name of the agent (e.g. "monitor").
+        status: "processing" or "complete".
+        duration: Execution duration in seconds (optional, for complete).
+        room_id: The Band room ID — MUST be passed by agents so the pipeline
+            visualization can track per-room status instead of all writing to
+            a single "default" bucket.
+    """
     if httpx is None:
         return
     try:
         from core.settings import get_settings
 
         settings = get_settings()
-        url = f"{settings.REGIQ_API_BASE_URL}/api/v1/hitl/pipeline/status/default"
-        payload = {"agent": agent_name, "status": status}
+        url = f"{settings.REGIQ_API_BASE_URL}/api/v1/hitl/pipeline/status/{room_id}"
+        payload: dict[str, Any] = {"agent": agent_name, "status": status}
         if duration is not None:
             payload["duration"] = duration
         async with httpx.AsyncClient() as client:

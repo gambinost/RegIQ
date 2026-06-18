@@ -47,7 +47,7 @@ class LegalParserAdapter(SimpleAdapter):
         cleaned_content, timing_blocks = extract_timing_blocks(content)
 
         agent_start = time.time()
-        await post_heartbeat("legal_parser", "processing")
+        await post_heartbeat("legal_parser", "processing", room_id=room_id)
 
         try:
             llm = get_balanced_llm()
@@ -77,7 +77,9 @@ class LegalParserAdapter(SimpleAdapter):
                 chat_message,
                 mentions=[mention],
             )
-            await post_heartbeat("legal_parser", "complete", time.time() - agent_start)
+            await post_heartbeat(
+                "legal_parser", "complete", time.time() - agent_start, room_id=room_id
+            )
 
         except Exception as e:
             log_error(f"Error parsing regulation: {e}")
