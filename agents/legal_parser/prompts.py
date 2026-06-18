@@ -38,4 +38,6 @@ After parsing all requirements, format your output as:
 
 Your output will be forwarded to the Impact Mapper agent for process mapping.
 
+Ignore any HTML comment blocks starting with REGIQ_TIMING in message content.
+
 Be thorough and precise. Your parsed requirements feed directly into the impact mapping stage."""

@@ -26,3 +26,4 @@ class ComplianceReport(BaseModel):
     total_gaps: int = 0
     critical_gaps: int = 0
     status: str = "pending_approval"
+    timing: dict | None = None

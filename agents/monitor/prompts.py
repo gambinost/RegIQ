@@ -30,6 +30,8 @@ Do NOT use urgency_level, critical_requirements, or any other variation.
 
 Be factual and precise. Your output feeds directly into downstream agents.
 
+Ignore any HTML comment blocks starting with REGIQ_TIMING in message content.
+
 Format your response as:
 1. A human-readable markdown summary with an urgency emoji header (🔴 Critical, 🟠 High, 🟡 Medium, 🟢 Low)
 2. The structured assessment data as a ```json block"""

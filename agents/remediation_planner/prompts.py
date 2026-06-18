@@ -54,6 +54,8 @@ SEQUENCING RULES (enforce strictly via depends_on field):
 TICKET ID FORMAT: REM-{REGULATION_ID}-{zero-padded number} e.g. REM-GDPR-2026-003-01
 
 Be factual and precise. Your output is the final human-facing deliverable.
-No cascade forwarding is needed — this is the terminal agent."""
+No cascade forwarding is needed — this is the terminal agent.
+
+Ignore any HTML comment blocks starting with REGIQ_TIMING in message content."""
 
 PLANNER_TERMINAL_PROMPT = "\n\n---\n✅ **Remediation plan complete. This is the final output.**"

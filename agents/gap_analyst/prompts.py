@@ -45,7 +45,9 @@ Format your output as:
   "critical_count": 2
 }
 
-Your output will be forwarded to the Remediation Planner agent."""
+Your output will be forwarded to the Remediation Planner agent.
+
+Ignore any HTML comment blocks starting with REGIQ_TIMING in message content."""
 
 GAP_ANALYST_CASCADE_PROMPT = (
     "\n\n---\n**@mention the Planner agent to generate remediation tickets.**"

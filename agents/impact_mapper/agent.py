@@ -4,6 +4,7 @@ load_dotenv()
 
 import asyncio
 import re
+import time
 
 from band import Agent, Emit
 from band.core.simple_adapter import SimpleAdapter
@@ -11,6 +12,7 @@ from band.core.types import PlatformMessage
 
 from core.cascade import resolve_cascade_target
 from core.llm import get_balanced_llm
+from core.timing import extract_timing_blocks, append_timing_block, post_heartbeat
 from rag.retriever import query_knowledge_base
 from utils.loggers import log_info, log_success, log_error, log_warning
 
@@ -50,8 +52,14 @@ class ImpactMapperAdapter(SimpleAdapter):
             log_error("Empty message, skipping")
             return
 
+        # Extract timing blocks from incoming message
+        cleaned_content, timing_blocks = extract_timing_blocks(content)
+
+        agent_start = time.time()
+        await post_heartbeat("impact_mapper", "processing")
+
         try:
-            rag_context = await query_knowledge_base(content)
+            rag_context = await query_knowledge_base(cleaned_content)
             if rag_context:
                 log_success(f"RAG: Retrieved context ({len(rag_context)} chars)")
             else:
@@ -59,7 +67,7 @@ class ImpactMapperAdapter(SimpleAdapter):
 
             llm = get_balanced_llm()
 
-            human_message = f"## Requirements\n{content}"
+            human_message = f"## Requirements\n{cleaned_content}"
             if rag_context:
                 human_message += f"\n\n## Company Processes\n{rag_context}"
 
@@ -76,10 +84,17 @@ class ImpactMapperAdapter(SimpleAdapter):
             self._cascade_handle = cascade_handle
             mention = cascade_handle or slug or "gap-analyst"
 
+            # Build outgoing message with cumulative timing
             chat_message = response.content + IMPACT_MAPPER_CASCADE_PROMPT
+            for block in timing_blocks:
+                chat_message = append_timing_block(chat_message, block["agent"], block["duration"])
+            chat_message = append_timing_block(
+                chat_message, "impact_mapper", time.time() - agent_start
+            )
 
             log_success(f"Impact mapping complete, sending to {mention}")
             await tools.send_message(chat_message, mentions=[mention])
+            await post_heartbeat("impact_mapper", "complete", time.time() - agent_start)
 
         except Exception as e:
             log_error(f"Error mapping impact: {e}")

@@ -8,6 +8,7 @@ router = APIRouter(prefix="/api/v1/hitl", tags=["hitl"])
 _hitl_decisions: dict[str, str] = {}
 _generated_reports: dict[str, ComplianceReport] = {}
 _latest_report_id: str | None = None
+_pipeline_status: dict[str, dict[str, str]] = {}
 
 _mock_report = ComplianceReport(
     regulation_id="GDPR-2026-003",
@@ -180,7 +181,9 @@ async def submit_hitl_decision(request: DecisionRequest):
     if decision not in ("APPROVED", "REJECTED"):
         raise ValueError("Decision must be APPROVED or REJECTED")
 
-    _hitl_decisions["GDPR-2026-003"] = decision
+    # Apply decision to the latest report if no specific ID provided
+    if _latest_report_id:
+        _hitl_decisions[_latest_report_id] = decision
     return DecisionResponse(status="received", decision=decision)
 
 
@@ -190,3 +193,21 @@ async def get_hitl_status(regulation_id: str):
     if not decision:
         return {"status": "pending", "decision": None}
     return {"status": "completed", "decision": decision}
+
+
+@router.post("/pipeline/status/{room_id}")
+async def update_pipeline_status(room_id: str, status: dict):
+    """Store an agent status update from the pipeline."""
+    agent_name = status.get("agent", "unknown")
+    agent_status = status.get("status", "processing")
+    duration = status.get("duration")
+    _pipeline_status.setdefault(room_id, {})[agent_name] = agent_status
+    if duration is not None:
+        _pipeline_status[room_id][f"{agent_name}_duration"] = str(duration)
+    return {"status": "updated"}
+
+
+@router.get("/pipeline/status/{room_id}")
+async def get_pipeline_status(room_id: str):
+    """Return current pipeline status for a room."""
+    return _pipeline_status.get(room_id, {})
