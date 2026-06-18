@@ -23,6 +23,16 @@ export interface ComplianceReport {
   status: 'pending_approval' | 'approved' | 'rejected'
   sequencing_note: string
   tickets: RemediationTicket[]
+  timing?: PipelineTiming | null
+}
+
+export interface PipelineTiming {
+  monitor?: number
+  legal_parser?: number
+  impact_mapper?: number
+  gap_analyst?: number
+  remediation_planner?: number
+  total?: number
 }
 
 export type Decision = 'APPROVED' | 'REJECTED'

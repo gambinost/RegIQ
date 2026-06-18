@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()  # noqa: E402 — must run before langchain/langsmith imports
 
 import asyncio  # noqa: E402
+import time  # noqa: E402
 
 from band import Agent, Emit  # noqa: E402
 from band.core.simple_adapter import SimpleAdapter  # noqa: E402
@@ -12,6 +13,7 @@ from pydantic import ValidationError  # noqa: E402
 
 from core.cascade import resolve_cascade_target  # noqa: E402
 from core.llm import get_fast_llm  # noqa: E402
+from core.timing import append_timing_block, post_heartbeat  # noqa: E402
 from models.regulation import RegulationAssessment  # noqa: E402
 from utils.loggers import log_info, log_success, log_error, log_warning  # noqa: E402
 
@@ -105,6 +107,9 @@ class MonitorAdapter(SimpleAdapter):
             log_error("Received empty message, skipping")
             return
 
+        agent_start = time.time()
+        await post_heartbeat("monitor", "processing")
+
         try:
             assessment = await self._invoke_with_retry(content)
 
@@ -117,8 +122,10 @@ class MonitorAdapter(SimpleAdapter):
             mention = cascade_handle or slug
 
             chat_message = format_assessment(assessment) + "\n\n" + URGENCY_CASCADE_PROMPT
+            chat_message = append_timing_block(chat_message, "monitor", time.time() - agent_start)
 
             await tools.send_message(chat_message, mentions=[mention])
+            await post_heartbeat("monitor", "complete", time.time() - agent_start)
             log_success(f"Sent assessment to room, @mentioning {mention}")
 
         except Exception as e:

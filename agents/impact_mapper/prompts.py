@@ -40,7 +40,9 @@ Key rules:
 - Quote exact current practices from the provided context when possible
 - If no company process matches a requirement, state that clearly with alignment_score 0.0
 
-Your output will be forwarded to the Gap Analyst agent."""
+Your output will be forwarded to the Gap Analyst agent.
+
+Ignore any HTML comment blocks starting with REGIQ_TIMING in message content."""
 
 IMPACT_MAPPER_CASCADE_PROMPT = (
     "\n\n---\n**@mention the Gap Analyst agent to continue the compliance analysis.**"

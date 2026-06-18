@@ -4,6 +4,7 @@ load_dotenv()
 
 import asyncio
 import re
+import time
 
 from band import Agent, Emit
 from band.core.simple_adapter import SimpleAdapter
@@ -11,6 +12,7 @@ from band.core.types import PlatformMessage
 
 from core.cascade import resolve_cascade_target
 from core.llm import get_balanced_llm
+from core.timing import extract_timing_blocks, append_timing_block, post_heartbeat
 from utils.loggers import log_info, log_success, log_error, log_warning
 
 from agents.gap_analyst.prompts import GAP_ANALYST_SYSTEM_PROMPT, GAP_ANALYST_CASCADE_PROMPT
@@ -49,10 +51,16 @@ class GapAnalystAdapter(SimpleAdapter):
             log_error("Empty message, skipping")
             return
 
+        # Extract timing blocks from incoming message
+        cleaned_content, timing_blocks = extract_timing_blocks(content)
+
+        agent_start = time.time()
+        await post_heartbeat("gap_analyst", "processing")
+
         try:
             llm = get_balanced_llm()
 
-            human_message = f"## Impact Mapping Data\n{content}"
+            human_message = f"## Impact Mapping Data\n{cleaned_content}"
 
             response = await llm.ainvoke(
                 [
@@ -67,10 +75,17 @@ class GapAnalystAdapter(SimpleAdapter):
             self._cascade_handle = cascade_handle
             mention = cascade_handle or slug or "planner"
 
+            # Build outgoing message with cumulative timing
             chat_message = response.content + GAP_ANALYST_CASCADE_PROMPT
+            for block in timing_blocks:
+                chat_message = append_timing_block(chat_message, block["agent"], block["duration"])
+            chat_message = append_timing_block(
+                chat_message, "gap_analyst", time.time() - agent_start
+            )
 
             log_success(f"Gap analysis complete, sending to {mention}")
             await tools.send_message(chat_message, mentions=[mention])
+            await post_heartbeat("gap_analyst", "complete", time.time() - agent_start)
 
         except Exception as e:
             log_error(f"Error analyzing gaps: {e}")

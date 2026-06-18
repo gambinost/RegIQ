@@ -4,7 +4,7 @@ load_dotenv()
 
 import asyncio
 import json
-import re
+import time
 
 from band import Agent, Emit
 from band.core.simple_adapter import SimpleAdapter
@@ -12,6 +12,13 @@ from band.core.types import PlatformMessage
 
 from core.llm import get_balanced_llm
 from core.settings import get_settings
+from core.timing import (
+    extract_timing_blocks,
+    build_timing_dict,
+    append_timing_block,
+    format_timing_for_display,
+    post_heartbeat,
+)
 from models.report import ComplianceReport
 from utils.loggers import log_info, log_success, log_error, log_warning
 
@@ -85,10 +92,16 @@ class RemediationPlannerAdapter(SimpleAdapter):
             log_error("Empty message, skipping")
             return
 
+        # Extract timing blocks from all upstream agents
+        cleaned_content, timing_blocks = extract_timing_blocks(content)
+
+        agent_start = time.time()
+        await post_heartbeat("remediation_planner", "processing")
+
         try:
             llm = get_balanced_llm()
 
-            human_message = f"## Gap Analysis Data\n{content}"
+            human_message = f"## Gap Analysis Data\n{cleaned_content}"
 
             response = await llm.ainvoke(
                 [
@@ -103,9 +116,19 @@ class RemediationPlannerAdapter(SimpleAdapter):
 
             json_str = _extract_json(raw)
 
+            # Add own timing to the collection
+            planner_duration = round(time.time() - agent_start, 2)
+            timing_blocks.append({"agent": "remediation_planner", "duration": planner_duration})
+            timing_dict = build_timing_dict(timing_blocks)
+            if timing_dict:
+                log_info(format_timing_for_display(timing_dict))
+
             try:
                 report_data = json.loads(json_str)
                 report = ComplianceReport.model_validate(report_data)
+                # Inject timing into report
+                if timing_dict:
+                    report.timing = timing_dict
                 log_success(
                     f"Validated report: {report.regulation_id} — "
                     f"{len(report.tickets)} tickets, "
@@ -138,6 +161,7 @@ class RemediationPlannerAdapter(SimpleAdapter):
 
             log_success("Remediation plan complete — terminal agent, no cascade")
             await tools.send_message(chat_message, mentions=[mention] if mention else [])
+            await post_heartbeat("remediation_planner", "complete", time.time() - agent_start)
 
         except Exception as e:
             log_error(f"Error generating remediation plan: {e}")

@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import asyncio
+import time
 
 from band import Agent, Emit
 from band.core.simple_adapter import SimpleAdapter
@@ -10,6 +11,7 @@ from band.core.types import PlatformMessage
 
 from core.cascade import resolve_cascade_target
 from core.llm import get_balanced_llm
+from core.timing import extract_timing_blocks, append_timing_block, post_heartbeat
 from utils.loggers import log_info, log_success, log_error, log_warning
 
 from agents.legal_parser.prompts import LEGAL_PARSER_SYSTEM_PROMPT
@@ -41,12 +43,18 @@ class LegalParserAdapter(SimpleAdapter):
             log_error("Empty message, skipping")
             return
 
+        # Extract timing blocks from incoming message
+        cleaned_content, timing_blocks = extract_timing_blocks(content)
+
+        agent_start = time.time()
+        await post_heartbeat("legal_parser", "processing")
+
         try:
             llm = get_balanced_llm()
             response = await llm.ainvoke(
                 [
                     ("system", LEGAL_PARSER_SYSTEM_PROMPT),
-                    ("human", content),
+                    ("human", cleaned_content),
                 ]
             )
 
@@ -56,11 +64,20 @@ class LegalParserAdapter(SimpleAdapter):
             self._cascade_handle = cascade_handle
             mention = cascade_handle or slug or "impact-mapper"
 
+            # Build outgoing message with cumulative timing
+            chat_message = response.content
+            for block in timing_blocks:
+                chat_message = append_timing_block(chat_message, block["agent"], block["duration"])
+            chat_message = append_timing_block(
+                chat_message, "legal_parser", time.time() - agent_start
+            )
+
             log_success(f"Parsing complete, sending to {mention}")
             await tools.send_message(
-                response.content,
+                chat_message,
                 mentions=[mention],
             )
+            await post_heartbeat("legal_parser", "complete", time.time() - agent_start)
 
         except Exception as e:
             log_error(f"Error parsing regulation: {e}")
