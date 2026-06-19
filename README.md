@@ -376,7 +376,7 @@ RegIQ/
 | Remediation ticket generation | `anthropic/claude-sonnet-4.6` | Balanced | Structured output with dependency chains and effort estimates |
 | Document embeddings (RAG) | `text-embedding-3-small` | Cheap | Standard OpenAI embeddings for semantic retrieval from Qdrant |
 
-**The math:** A single GPT-4o call for all 5 agents would cost ~$0.30 per analysis and waste frontier-model tokens on simple classification. RegIQ's routed approach costs **~$0.05 per analysis** — 6x cheaper — while using frontier reasoning only where it matters.
+**The math:** A single GPT-4o call for all 5 agents would cost ~$0.30 per analysis and waste frontier-model tokens on simple classification. RegIQ's routed approach costs **$0.05 per analysis** — 6x cheaper — while using frontier reasoning only where it matters.
 
 **One API key, three model families.** AI/ML API handles Google (embeddings), Anthropic (reasoning), and OpenAI (classification) through a single `AIML_API_KEY`. No separate accounts, no separate billing, no separate SDKs. LangChain's `ChatOpenAI` client routes everything through the AI/ML API base URL.
 
