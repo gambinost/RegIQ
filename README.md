@@ -351,6 +351,8 @@ RegIQ/
 
 **Intentional model routing.** Classification goes to the cheapest model. Legal reasoning goes to the best model. Embeddings go to the standard model. This isn't arbitrary — it's a cost-optimized architecture that keeps analysis under $0.05 per regulation.
 
+**Why reasoning models matter here.** We tested GPT-4o-mini on the Legal Parser and Gap Analyst agents — it failed. Lightweight models can't reliably extract nuanced legal obligations from dense regulatory text, identify compliance gaps against company SOPs, or produce structured severity assessments. Legal compliance is a reasoning-heavy domain: one misread clause means a missed obligation. Claude Sonnet handles this because it reasons through multi-step legal analysis rather than pattern-matching. The Monitor uses GPT-4o-mini because it only needs to parse JSON and tag urgency — no deep reasoning. This routing is the difference between a working system and one that hallucinates compliance gaps.
+
 **RAG-grounded compliance.** The Impact Mapper doesn't guess — it queries your actual company SOPs from Qdrant and maps requirements to real processes. When the gap analyst finds a 90-day vs 30-day conflict, it's grounded in your actual data retention policy.
 
 **Human-in-the-loop gate.** The Remediation Planner doesn't auto-apply fixes. It generates a prioritized plan with dependency chains and presents it for human approval. The HITL gate ensures compliance decisions stay with humans.
