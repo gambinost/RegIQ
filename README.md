@@ -324,6 +324,25 @@ RegIQ/
 
 ---
 
+## Built with AI/ML API
+
+> **Intentional model routing through a single API key.** RegIQ uses AI/ML API as the unified inference layer across 3 model families — choosing the right model for each task instead of defaulting to one expensive model for everything.
+
+| Task | Model via AI/ML API | Cost Tier | Why |
+|------|---------------------|-----------|-----|
+| Regulation classification & urgency tagging | `gpt-4o-mini` | Cheap | Fast JSON parsing and categorization — no deep reasoning needed |
+| Legal requirement extraction | `anthropic/claude-sonnet-4.6` | Balanced | Dense legal text demands strong instruction following and careful reasoning |
+| RAG-based process mapping | `anthropic/claude-sonnet-4.6` | Balanced | Synthesizes retrieved company SOPs with regulatory requirements |
+| Compliance gap identification | `anthropic/claude-sonnet-4.6` | Balanced | Most critical judgment call — needs accurate severity assessment |
+| Remediation ticket generation | `anthropic/claude-sonnet-4.6` | Balanced | Structured output with dependency chains and effort estimates |
+| Document embeddings (RAG) | `text-embedding-3-small` | Cheap | Standard OpenAI embeddings for semantic retrieval from Qdrant |
+
+**The math:** A single GPT-4o call for all 5 agents would cost ~$0.30 per analysis and waste frontier-model tokens on simple classification. RegIQ's routed approach costs **~$0.05 per analysis** — 6x cheaper — while using frontier reasoning only where it matters.
+
+**One API key, three model families.** AI/ML API handles Google (embeddings), Anthropic (reasoning), and OpenAI (classification) through a single `AIML_API_KEY`. No separate accounts, no separate billing, no separate SDKs. LangChain's `ChatOpenAI` client routes everything through the AI/ML API base URL.
+
+---
+
 ## License
 
 MIT
