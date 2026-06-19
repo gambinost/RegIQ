@@ -87,6 +87,8 @@ Watch 5 AI agents process your regulation in real time. Each agent lights up as 
 
 The Band chat room shows the full cascade in action. Each agent posts its output and @mentions the next agent in the chain. Judges can see the system working live — it's not a pre-computed demo.
 
+![Remediation Planner Output](assets/final_agent.png)
+
 ### 5. Review — Approve or Reject
 
 ![Review Page](assets/Review.png)
@@ -351,7 +353,7 @@ RegIQ/
 
 **Intentional model routing.** Classification goes to the cheapest model. Legal reasoning goes to the best model. Embeddings go to the standard model. This isn't arbitrary — it's a cost-optimized architecture that keeps analysis under $0.05 per regulation.
 
-**Why reasoning models matter here.** We tested GPT-4o-mini on the Legal Parser and Gap Analyst agents — it failed. Lightweight models can't reliably extract nuanced legal obligations from dense regulatory text, identify compliance gaps against company SOPs, or produce structured severity assessments. Legal compliance is a reasoning-heavy domain: one misread clause means a missed obligation. Claude Sonnet handles this because it reasons through multi-step legal analysis rather than pattern-matching. The Monitor uses GPT-4o-mini because it only needs to parse JSON and tag urgency — no deep reasoning. This routing is the difference between a working system and one that hallucinates compliance gaps.
+**Why reasoning models matter here.** I tested GPT-4o-mini on the Legal Parser and Gap Analyst agents — it failed. Lightweight models can't reliably extract nuanced legal obligations from dense regulatory text, identify compliance gaps against company SOPs, or produce structured severity assessments. Legal compliance is a reasoning-heavy domain: one misread clause means a missed obligation. Claude Sonnet handles this because it reasons through multi-step legal analysis rather than pattern-matching. The Monitor uses GPT-4o-mini because it only needs to parse JSON and tag urgency — no deep reasoning. This routing is the difference between a working system and one that hallucinates compliance gaps.
 
 **RAG-grounded compliance.** The Impact Mapper doesn't guess — it queries your actual company SOPs from Qdrant and maps requirements to real processes. When the gap analyst finds a 90-day vs 30-day conflict, it's grounded in your actual data retention policy.
 
@@ -384,7 +386,7 @@ RegIQ/
 
 The full 5-agent cascade takes ~8 minutes end-to-end (Legal Parser alone: ~82s, Impact Mapper: ~138s, Gap Analyst: ~119s, Remediation Planner: ~141s). With AI/ML API credits at $2.63 remaining, running the complete pipeline multiple times isn't feasible.
 
-**What we demonstrated:**
+**What I demonstrated:**
 - The Monitor agent parsing regulations in real time
 - LangSmith traces showing every LLM call across the cascade
 - Architecture diagram with intentional model routing
@@ -396,7 +398,7 @@ The full 5-agent cascade takes ~8 minutes end-to-end (Legal Parser alone: ~82s, 
 - React frontend with pipeline visualization
 - 62 files, 7,800+ lines of code
 
-The video demonstration shows the complete system in action. We're happy to demo live if credits permit.
+The video demonstration shows the complete system in action. I'm happy to demo live if credits permit.
 
 ---
 
