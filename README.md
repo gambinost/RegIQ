@@ -13,6 +13,41 @@ Each agent is an autonomous process connected via Band SDK. They communicate thr
 
 ---
 
+## How Band Orchestrates the Cascade
+
+Band is the live orchestration layer that makes RegIQ's multi-agent pipeline possible. Without Band, each agent would be an isolated LLM call. With Band, they become a **self-organizing cascade** that unfolds in real time in a shared chat room.
+
+**The mechanism:**
+
+1. **Room creation** — FastAPI creates a Band chat room and adds all 5 agents as participants via the Band REST API.
+
+2. **@mention routing** — When the Monitor finishes processing, it @mentions the Legal Parser in its message. Band delivers that message directly to the Legal Parser's `on_message` handler. No message queues, no pub/sub brokers, no shared state. Just @mentions.
+
+3. **Chain reaction** — Each agent resolves the next agent in the cascade by calling `get_participants()` and matching the target slug. The Legal Parser @mentions the Impact Mapper. The Impact Mapper @mentions the Gap Analyst. The Gap Analyst @mentions the Remediation Planner. The cascade unfolds automatically.
+
+4. **Live visibility** — Every agent message, every @mention, every timing metric appears in the Band chat room in real time. Judges can watch the cascade happen — it's not a pre-computed output or a hidden pipeline.
+
+5. **Human-in-the-loop** — The human user is also a participant in the Band room. The Remediation Planner @mentions them when the final report is ready. The human can review and respond directly in the chat.
+
+```
+FastAPI creates room
+  → Adds 5 agents + human as participants
+    → Sends regulation to @monitor
+      → Monitor → @legal-parser
+        → Legal Parser → @impact-mapper
+          → Impact Mapper → @gap-analyst
+            → Gap Analyst → @planner
+              → Planner → @human (HITL gate)
+```
+
+**Why Band instead of alternatives?**
+- **vs. function calls:** Function calls are synchronous and tightly coupled. Band agents are independent processes that can run on different machines.
+- **vs. message queues (Redis/RabbitMQ):** Message queues require infrastructure, configuration, and monitoring. Band is a managed platform — register agents, add them to a room, and they communicate.
+- **vs. shared memory:** Shared memory creates race conditions and state management nightmares. Band agents are stateless — they receive a message, process it, and @mention the next agent.
+- **vs. HTTP webhooks:** Webhooks require each agent to know the next agent's URL. Band agents discover each other dynamically via `get_participants()`.
+
+---
+
 ## Architecture
 
 ![Architecture Diagram](assets/architecture.svg)
@@ -312,7 +347,7 @@ RegIQ/
 
 ## What Makes This Different
 
-**Real multi-agent cascade, not a wrapper.** Each agent is an independent process. They communicate through Band's @mention system — not function calls, not message queues, not shared memory. The cascade is visible in real time in the Band chat UI.
+**Band-powered multi-agent cascade, not a wrapper.** RegIQ runs 5 independent agent processes orchestrated entirely through Band SDK. Each agent is a standalone Python process with its own LLM call, its own prompt, and its own reasoning. They communicate exclusively through Band's @mention routing system — no shared memory, no function calls, no message queues. The entire cascade unfolds live in a Band chat room, visible to judges in real time.
 
 **Intentional model routing.** Classification goes to the cheapest model. Legal reasoning goes to the best model. Embeddings go to the standard model. This isn't arbitrary — it's a cost-optimized architecture that keeps analysis under $0.05 per regulation.
 
