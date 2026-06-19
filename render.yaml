@@ -2,10 +2,8 @@ services:
   - type: web
     name: regiq
     runtime: python
-    buildCommand: |
-      pip install -e .
-      cd frontend && npm install && npm run build && cd ..
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: uv sync && cd frontend && npm install && npm run build
+    startCommand: uv run uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: "3.12"
@@ -16,7 +14,7 @@ services:
       - key: MODEL_FAST
         value: "gpt-4o-mini"
       - key: MODEL_BALANCED
-        value: "anthropic/claude-sonnet-4.6"
+        value: "gpt-4o-mini"
       - key: MODEL_EMBEDDINGS
         value: "text-embedding-3-small"
       - key: QDRANT_API_KEY
