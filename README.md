@@ -414,7 +414,7 @@ RegIQ/
 
 ## Note on Demo & Credits
 
-The full 5-agent cascade takes ~90 seconds end-to-end with gpt-4o-mini (~$0.10-0.30 per run).
+The full 5-agent cascade takes 90 seconds end-to-end with gpt-4o-mini (~$0.10-0.30 per run).
 
 **Live deployment:** [http://100.24.25.250](http://100.24.25.250) (AWS EC2 t3.small, Docker)
 
