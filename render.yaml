@@ -1,0 +1,59 @@
+services:
+  - type: web
+    name: regiq
+    runtime: python
+    buildCommand: |
+      pip install -e .
+      cd frontend && npm install && npm run build && cd ..
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: AIML_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        value: "https://api.aimlapi.com/v1"
+      - key: MODEL_FAST
+        value: "gpt-4o-mini"
+      - key: MODEL_BALANCED
+        value: "anthropic/claude-sonnet-4.6"
+      - key: MODEL_EMBEDDINGS
+        value: "text-embedding-3-small"
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: QDRANT_CLUSTER_ENDPOINT
+        sync: false
+      - key: QDRANT_COLLECTION
+        value: "regiq_company_kb"
+      - key: LANGSMITH_TRACING
+        value: "true"
+      - key: LANGSMITH_API_KEY
+        sync: false
+      - key: LANGSMITH_PROJECT
+        value: "RegIQ"
+      - key: THENVOI_REST_URL
+        value: "https://app.band.ai/"
+      - key: THENVOI_WS_URL
+        value: "wss://app.band.ai/api/v1/socket/websocket"
+      - key: BAND_MONITOR_AGENT_ID
+        value: "eec2adda-854c-4cb8-b5c6-d65a65a373be"
+      - key: BAND_MONITOR_API_KEY
+        sync: false
+      - key: BAND_LEGAL_PARSER_AGENT_ID
+        value: "3c39017a-e28d-4d3c-b1e6-9d2d2aac5886"
+      - key: BAND_LEGAL_PARSER_API_KEY
+        sync: false
+      - key: BAND_IMPACT_MAPPER_AGENT_ID
+        value: "be3f4dd3-4344-4983-9679-943df9f86647"
+      - key: BAND_IMPACT_MAPPER_API_KEY
+        sync: false
+      - key: BAND_GAP_ANALYST_AGENT_ID
+        value: "1a27ae4e-95a9-401e-8d6d-50963b1488c0"
+      - key: BAND_GAP_ANALYST_API_KEY
+        sync: false
+      - key: BAND_REMEDIATION_PLANNER_AGENT_ID
+        value: "94b026bb-8b90-4359-8d74-9ee598a9a587"
+      - key: BAND_REMEDIATION_PLANNER_API_KEY
+        sync: false
+      - key: REGIQ_API_BASE_URL
+        value: "https://regiq.onrender.com"
