@@ -13,6 +13,7 @@ from band.core.types import PlatformMessage
 
 from core.cascade import resolve_cascade_target
 from core.llm import get_balanced_llm
+from core.room_registry import is_active_room
 from core.timing import extract_timing_blocks, append_timing_block, post_heartbeat
 from utils.loggers import log_info, log_success, log_error, log_warning
 
@@ -47,6 +48,10 @@ class GapAnalystAdapter(SimpleAdapter):
         room_id: str,
     ) -> None:
         log_info(f"Gap Analyst received message from {msg.sender_name}")
+
+        if not is_active_room(room_id):
+            log_info(f"Skipping old room {room_id}")
+            return
 
         content = msg.content
         if not content or not content.strip():

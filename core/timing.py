@@ -81,10 +81,14 @@ class AgentTimer:
         return round(time.time() - self.start_time, 2)
 
 
+import logging
+
 try:
     import httpx
 except ImportError:
     httpx = None
+
+_log = logging.getLogger("regiq.timing")
 
 
 async def post_heartbeat(
@@ -93,17 +97,9 @@ async def post_heartbeat(
     duration: float | None = None,
     room_id: str = "default",
 ) -> None:
-    """Post an agent status update to the FastAPI pipeline status endpoint.
-
-    Args:
-        agent_name: Name of the agent (e.g. "monitor").
-        status: "processing" or "complete".
-        duration: Execution duration in seconds (optional, for complete).
-        room_id: The Band room ID — MUST be passed by agents so the pipeline
-            visualization can track per-room status instead of all writing to
-            a single "default" bucket.
-    """
+    """Post an agent status update to the FastAPI pipeline status endpoint."""
     if httpx is None:
+        _log.warning("[HEARTBEAT] httpx not installed, skipping heartbeat for %s", agent_name)
         return
     try:
         from core.settings import get_settings
@@ -114,6 +110,7 @@ async def post_heartbeat(
         if duration is not None:
             payload["duration"] = duration
         async with httpx.AsyncClient() as client:
-            await client.post(url, json=payload, timeout=5.0)
-    except Exception:
-        pass
+            resp = await client.post(url, json=payload, timeout=5.0)
+            _log.info("[HEARTBEAT] %s → %s (HTTP %d)", agent_name, status, resp.status_code)
+    except Exception as e:
+        _log.warning("[HEARTBEAT] %s → %s FAILED: %s", agent_name, status, e)

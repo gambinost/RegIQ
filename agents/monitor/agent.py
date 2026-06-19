@@ -14,6 +14,7 @@ from pydantic import ValidationError  # noqa: E402
 
 from core.cascade import resolve_cascade_target  # noqa: E402
 from core.llm import get_fast_llm  # noqa: E402
+from core.room_registry import is_active_room  # noqa: E402
 from core.timing import append_timing_block, post_heartbeat  # noqa: E402
 from models.regulation import RegulationAssessment  # noqa: E402
 from utils.loggers import log_info, log_success, log_error, log_warning  # noqa: E402
@@ -104,6 +105,10 @@ class MonitorAdapter(SimpleAdapter):
         room_id: str,
     ) -> None:
         log_info(f"Monitor received message from {msg.sender_name} in room {room_id}")
+
+        if not is_active_room(room_id):
+            log_info(f"Skipping old room {room_id}")
+            return
 
         content = msg.content
         if not content or not content.strip():

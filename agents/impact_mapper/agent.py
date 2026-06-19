@@ -13,6 +13,7 @@ from band.core.types import PlatformMessage
 
 from core.cascade import resolve_cascade_target
 from core.llm import get_balanced_llm
+from core.room_registry import is_active_room
 from core.timing import extract_timing_blocks, append_timing_block, post_heartbeat
 from rag.retriever import query_knowledge_base
 from utils.loggers import log_info, log_success, log_error, log_warning
@@ -49,6 +50,10 @@ class ImpactMapperAdapter(SimpleAdapter):
     ) -> None:
         log_info(f"Impact Mapper received message from {msg.sender_name}")
 
+        if not is_active_room(room_id):
+            log_info(f"Skipping old room {room_id}")
+            return
+
         content = msg.content
         if not content or not content.strip():
             log_error("Empty message, skipping")
@@ -61,7 +66,11 @@ class ImpactMapperAdapter(SimpleAdapter):
         await post_heartbeat("impact_mapper", "processing", room_id=room_id)
 
         try:
-            rag_context = await query_knowledge_base(cleaned_content)
+            rag_context = ""
+            try:
+                rag_context = await query_knowledge_base(cleaned_content)
+            except Exception as rag_err:
+                log_warning(f"RAG unavailable ({rag_err}), proceeding without company data")
             if rag_context:
                 log_success(f"RAG: Retrieved context ({len(rag_context)} chars)")
             else:

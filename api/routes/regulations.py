@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from core.band_client import trigger_pipeline
+from core.room_registry import register_room
 from utils.loggers import log_info, log_error
 
 router = APIRouter(prefix="/api/v1", tags=["trigger"])
@@ -89,6 +90,7 @@ async def trigger_cascade(request: TriggerRequest):
             regulation_text=regulation_text,
             target_handle=request.target_handle,
         )
+        register_room(room_id)
         log_info(f"Cascade triggered in room {room_id}")
         return TriggerResponse(
             room_id=room_id,

@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from models.report import ComplianceReport, RemediationTicket
+from utils.loggers import log_info
 
 router = APIRouter(prefix="/api/v1/hitl", tags=["hitl"])
 
@@ -247,6 +248,7 @@ async def update_pipeline_status(room_id: str, status: dict):
     _pipeline_status.setdefault(room_id, {})[agent_name] = agent_status
     if duration is not None:
         _pipeline_status[room_id][f"{agent_name}_duration"] = str(duration)
+    log_info(f"[HEARTBEAT-RECV] room={room_id} agent={agent_name} status={agent_status}")
     return {"status": "updated"}
 
 

@@ -149,6 +149,8 @@ RegIQ routes inference across 3 model families through a single AI/ML API key. E
 
 **Cost per full compliance analysis: ~$0.05.** The equivalent from a compliance consulting firm: $5,000–$15,000.
 
+> **Hackathon note:** Due to API budget constraints, all agents currently use `gpt-4o-mini` for both fast and balanced inference. The architecture supports model routing as described above — in production, Legal Parser, Impact Mapper, Gap Analyst, and Remediation Planner would use a stronger reasoning model like Claude Sonnet.
+
 ---
 
 ## Agents
@@ -262,6 +264,29 @@ Either:
 - **Frontend:** Go to [http://localhost:5173/trigger](http://localhost:5173/trigger), select a regulation, click "Start Compliance Analysis"
 - **API:** `curl -X POST http://localhost:8000/api/v1/trigger -H "Content-Type: application/json" -d '{"regulation_id": "GDPR-2026-003"}'`
 
+### Docker (one-command deploy)
+
+```bash
+docker compose up --build
+```
+
+Open [http://localhost](http://localhost). Agents start automatically as subprocesses.
+
+For EC2 deployment:
+```bash
+# On EC2 (Amazon Linux 2023)
+sudo dnf install -y docker
+sudo systemctl start docker
+sudo usermod -aG docker ec2-user
+# Install docker-compose manually (see scripts/deploy_aws.sh)
+
+# From your machine
+tar -cf regiq.tar --exclude=node_modules --exclude=__pycache__ --exclude=.venv --exclude=.git .
+scp -i key.pem regiq.tar ec2-user@<EC2_IP>:~/regiq.tar
+scp -i key.pem .env ec2-user@<EC2_IP>:~/regiq/.env
+ssh -i key.pem ec2-user@<EC2_IP> "cd ~ && rm -rf regiq && mkdir regiq && tar -xf regiq.tar -C regiq && cd regiq && DOCKER_BUILDKIT=0 docker compose up -d --build"
+```
+
 ---
 
 ## API Reference
@@ -285,16 +310,19 @@ Either:
 
 ```
 RegIQ/
-├── main.py                          # FastAPI entry point
+├── main.py                          # FastAPI entry point + agent subprocess mgmt
+├── Dockerfile                       # Docker image (Python 3.12-slim)
+├── docker-compose.yml               # Container orchestration
+├── .dockerignore                    # Build exclusions
 ├── pyproject.toml                   # Dependencies + build config
 ├── .env.example                     # Environment variable template
 │
 ├── agents/
 │   ├── monitor/                     # Agent 1: urgency tagging (GPT-4o-mini)
-│   ├── legal_parser/                # Agent 2: requirement extraction (Claude Sonnet)
-│   ├── impact_mapper/               # Agent 3: RAG process mapping (Claude Sonnet)
-│   ├── gap_analyst/                 # Agent 4: compliance gap analysis (Claude Sonnet)
-│   └── remediation_planner/         # Agent 5: ticket generation (Claude Sonnet)
+│   ├── legal_parser/                # Agent 2: requirement extraction (GPT-4o-mini)
+│   ├── impact_mapper/               # Agent 3: RAG process mapping (GPT-4o-mini)
+│   ├── gap_analyst/                 # Agent 4: compliance gap analysis (GPT-4o-mini)
+│   └── remediation_planner/         # Agent 5: ticket generation (GPT-4o-mini)
 │
 ├── api/routes/
 │   ├── health.py                    # GET /health, GET /info
@@ -307,7 +335,8 @@ RegIQ/
 │   ├── band_config.py               # Band credential loading
 │   ├── band_client.py               # Band room creation + message sending
 │   ├── cascade.py                   # @mention-based cascade target resolution
-│   └── timing.py                    # Pipeline timing + heartbeat tracking
+│   ├── timing.py                    # Pipeline timing + heartbeat tracking
+│   └── room_registry.py             # Active room tracking (prevents stale processing)
 │
 ├── models/
 │   ├── regulation.py                # RegulationInput, RegulationAssessment
@@ -339,7 +368,8 @@ RegIQ/
 ├── scripts/
 │   ├── seed_kb.py                   # Load company docs into Qdrant
 │   ├── test_llm.py                  # AI/ML API connectivity test
-│   └── test_band_config.py          # Band credential test
+│   ├── test_band_config.py          # Band credential test
+│   └── deploy_aws.sh               # EC2 deployment script
 │
 └── configs/
     └── agent_config.yaml            # Band agent IDs + API keys
@@ -384,21 +414,18 @@ RegIQ/
 
 ## Note on Demo & Credits
 
-The full 5-agent cascade takes ~8 minutes end-to-end (Legal Parser alone: ~82s, Impact Mapper: ~138s, Gap Analyst: ~119s, Remediation Planner: ~141s). With AI/ML API credits at $2.63 remaining, running the complete pipeline multiple times isn't feasible.
+The full 5-agent cascade takes ~90 seconds end-to-end with gpt-4o-mini (~$0.10-0.30 per run).
 
-**What I demonstrated:**
-- The Monitor agent parsing regulations in real time
-- LangSmith traces showing every LLM call across the cascade
-- Architecture diagram with intentional model routing
-- Band SDK orchestration setup (5 agents, @mention cascade)
+**Live deployment:** [http://100.24.25.250](http://100.24.25.250) (AWS EC2 t3.small, Docker)
 
 **What's in this repo:**
 - Complete working system — all 5 agents built and tested
 - FastAPI backend with HITL approval flow
 - React frontend with pipeline visualization
-- 62 files, 7,800+ lines of code
-
-The video demonstration shows the complete system in action. I'm happy to demo live if credits permit.
+- Docker deployment (Dockerfile + docker-compose)
+- Room registry to prevent stale cascade processing
+- Heartbeat diagnostics for pipeline UI
+- Full LangSmith tracing across all agents
 
 ---
 

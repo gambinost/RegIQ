@@ -12,6 +12,7 @@ from band.core.simple_adapter import SimpleAdapter
 from band.core.types import PlatformMessage
 
 from core.llm import get_balanced_llm
+from core.room_registry import is_active_room
 from core.settings import get_settings
 from core.timing import (
     extract_timing_blocks,
@@ -84,6 +85,10 @@ class RemediationPlannerAdapter(SimpleAdapter):
         room_id: str,
     ) -> None:
         log_info(f"Remediation Planner received message from {msg.sender_name}")
+
+        if not is_active_room(room_id):
+            log_info(f"Skipping old room {room_id}")
+            return
 
         # Self-message guard: skip messages from ourselves.
         # Defensive: if any agent ever @mentions the Planner by mistake,
