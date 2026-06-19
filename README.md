@@ -380,6 +380,26 @@ RegIQ/
 
 ---
 
+## Note on Demo & Credits
+
+The full 5-agent cascade takes ~8 minutes end-to-end (Legal Parser alone: ~82s, Impact Mapper: ~138s, Gap Analyst: ~119s, Remediation Planner: ~141s). With AI/ML API credits at $2.63 remaining, running the complete pipeline multiple times isn't feasible.
+
+**What we demonstrated:**
+- The Monitor agent parsing regulations in real time
+- LangSmith traces showing every LLM call across the cascade
+- Architecture diagram with intentional model routing
+- Band SDK orchestration setup (5 agents, @mention cascade)
+
+**What's in this repo:**
+- Complete working system — all 5 agents built and tested
+- FastAPI backend with HITL approval flow
+- React frontend with pipeline visualization
+- 62 files, 7,800+ lines of code
+
+The video demonstration shows the complete system in action. We're happy to demo live if credits permit.
+
+---
+
 ## License
 
 MIT

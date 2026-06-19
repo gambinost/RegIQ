@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>RegIQ Cover</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-deep: #0a0e1a;
+    --bg-surface: #111827;
+    --accent-cyan: #06d6a0;
+    --accent-amber: #fbbf24;
+    --accent-rose: #f43f5e;
+    --accent-blue: #3b82f6;
+    --text-primary: #f1f5f9;
+    --text-muted: #94a3b8;
+    --grain-opacity: 0.03;
+  }
+
+  @font-face {
+    font-family: 'Cover';
+    src: local('Outfit');
+  }
+
+  body {
+    width: 1920px;
+    height: 1080px;
+    background: var(--bg-deep);
+    font-family: 'Outfit', sans-serif;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Grain texture overlay */
+  body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E");
+    opacity: var(--grain-opacity);
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* Ambient glow orbs */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.15;
+    pointer-events: none;
+  }
+  .orb-1 {
+    width: 600px; height: 600px;
+    background: var(--accent-cyan);
+    top: -200px; left: -100px;
+  }
+  .orb-2 {
+    width: 500px; height: 500px;
+    background: var(--accent-blue);
+    bottom: -150px; right: -50px;
+  }
+  .orb-3 {
+    width: 300px; height: 300px;
+    background: var(--accent-amber);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.08;
+  }
+
+  /* Grid lines background */
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(6, 214, 160, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(6, 214, 160, 0.03) 1px, transparent 1px);
+    background-size: 80px 80px;
+    pointer-events: none;
+  }
+
+  /* Main content container */
+  .container {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 140px;
+  }
+
+  /* Top bar - hackathon badge */
+  .badge {
+    position: absolute;
+    top: 48px;
+    left: 140px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-cyan);
+    box-shadow: 0 0 12px var(--accent-cyan);
+  }
+
+  /* Title block */
+  .title-block {
+    margin-bottom: 48px;
+  }
+  .title {
+    font-size: clamp(72px, 6vw, 120px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    text-wrap: balance;
+  }
+  .title .reg {
+    color: var(--accent-cyan);
+    text-shadow: 0 0 40px rgba(6, 214, 160, 0.3);
+  }
+  .title .iq {
+    color: var(--text-primary);
+    font-weight: 300;
+  }
+
+  /* Subtitle */
+  .subtitle {
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--text-muted);
+    max-width: 700px;
+    line-height: 1.5;
+    margin-top: 24px;
+  }
+  .subtitle strong {
+    color: var(--accent-amber);
+    font-weight: 600;
+  }
+
+  /* Cascade visualization */
+  .cascade {
+    position: absolute;
+    right: 120px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: flex-end;
+  }
+
+  .agent-node {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 24px;
+    border-radius: 8px;
+    background: rgba(17, 24, 39, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    backdrop-filter: blur(8px);
+    position: relative;
+    min-width: 280px;
+    transition: all 0.3s ease;
+  }
+  .agent-node:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 20px rgba(6, 214, 160, 0.1);
+  }
+
+  .agent-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0;
+  }
+  .agent-node:nth-child(1) .agent-icon { background: rgba(6, 214, 160, 0.15); color: var(--accent-cyan); }
+  .agent-node:nth-child(2) .agent-icon { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+  .agent-node:nth-child(3) .agent-icon { background: rgba(251, 191, 36, 0.15); color: var(--accent-amber); }
+  .agent-node:nth-child(4) .agent-icon { background: rgba(244, 63, 94, 0.15); color: var(--accent-rose); }
+  .agent-node:nth-child(5) .agent-icon { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+
+  .agent-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .agent-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+  }
+  .agent-model {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+
+  /* Connector lines */
+  .connector {
+    width: 2px;
+    height: 20px;
+    background: linear-gradient(to bottom, rgba(148, 163, 184, 0.2), rgba(148, 163, 184, 0.05));
+    margin: 0 auto;
+    position: relative;
+  }
+  .connector::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-cyan);
+    opacity: 0.4;
+  }
+
+  /* Bottom stats bar */
+  .stats {
+    position: absolute;
+    bottom: 48px;
+    left: 140px;
+    right: 140px;
+    display: flex;
+    gap: 64px;
+    align-items: center;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.02em;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .stat-divider {
+    width: 1px;
+    height: 40px;
+    background: rgba(148, 163, 184, 0.15);
+  }
+
+  /* Hackathon text bottom right */
+  .hackathon {
+    position: absolute;
+    bottom: 48px;
+    right: 140px;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .hackathon-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-amber);
+    letter-spacing: 0.05em;
+  }
+  .hackathon-event {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  /* @mention pulse animation on first agent */
+  .agent-node:first-child::after {
+    content: '@mention';
+    position: absolute;
+    right: -70px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent-cyan);
+    opacity: 0.5;
+    letter-spacing: 0.05em;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+  }
+
+  /* Horizontal line accent */
+  .h-line {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 60px;
+    height: 2px;
+    background: var(--accent-cyan);
+    opacity: 0.3;
+  }
+</style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="grid-bg"></div>
+  <div class="h-line"></div>
+
+  <div class="badge">
+    <div class="badge-dot"></div>
+    Band of Agents Hackathon 2026
+  </div>
+
+  <div class="container">
+    <div class="title-block">
+      <h1 class="title">
+        <span class="reg">Reg</span><span class="iq">IQ</span>
+      </h1>
+      <p class="subtitle">
+        Multi-agent <strong>regulatory compliance intelligence</strong> powered by
+        Band SDK. 5 AI agents cascade through regulations, map them to your processes,
+        and surface compliance gaps — in real time.
+      </p>
+    </div>
+
+    <!-- Cascade visualization -->
+    <div class="cascade">
+      <div class="agent-node">
+        <div class="agent-icon">01</div>
+        <div class="agent-info">
+          <div class="agent-name">Monitor</div>
+          <div class="agent-model">gpt-4o-mini</div>
+        </div>
+      </div>
+      <div class="connector"></div>
+      <div class="agent-node">
+        <div class="agent-icon">02</div>
+        <div class="agent-info">
+          <div class="agent-name">Legal Parser</div>
+          <div class="agent-model">claude-sonnet-4.6</div>
+        </div>
+      </div>
+      <div class="connector"></div>
+      <div class="agent-node">
+        <div class="agent-icon">03</div>
+        <div class="agent-info">
+          <div class="agent-name">Impact Mapper</div>
+          <div class="agent-model">claude-sonnet-4.6 + RAG</div>
+        </div>
+      </div>
+      <div class="connector"></div>
+      <div class="agent-node">
+        <div class="agent-icon">04</div>
+        <div class="agent-info">
+          <div class="agent-name">Gap Analyst</div>
+          <div class="agent-model">claude-sonnet-4.6</div>
+        </div>
+      </div>
+      <div class="connector"></div>
+      <div class="agent-node">
+        <div class="agent-icon">05</div>
+        <div class="agent-info">
+          <div class="agent-name">Remediation Planner</div>
+          <div class="agent-model">claude-sonnet-4.6</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom stats -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value">5</div>
+        <div class="stat-label">Agents</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-value">3</div>
+        <div class="stat-label">Model Families</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-value">1</div>
+        <div class="stat-label">API Key</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-value">~$0.05</div>
+        <div class="stat-label">Per Analysis</div>
+      </div>
+    </div>
+
+    <div class="hackathon">
+      <div class="hackathon-name">lablab.ai</div>
+      <div class="hackathon-event">Band of Agents Hackathon</div>
+    </div>
+  </div>
+</body>
+</html>
